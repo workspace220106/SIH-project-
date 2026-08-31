@@ -5,3 +5,5 @@ dist
 
 .tmp
 *.tsbuildinfo
+
+.vercel

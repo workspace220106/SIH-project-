@@ -34,7 +34,7 @@ export function RangeRings({ radii = [46, 96, 158] }: { radii?: number[] }) {
 
   return (
     <lineSegments geometry={geometry} raycast={() => null} frustumCulled={false}>
-      <lineBasicMaterial color="#14181B" toneMapped={false} transparent opacity={0.9} />
+      <lineBasicMaterial color="#D8E3EC" toneMapped={false} transparent opacity={0.9} />
     </lineSegments>
   )
 }

@@ -24,10 +24,10 @@ function makeHaloTexture(): CanvasTexture {
   canvas.height = size
   const ctx = canvas.getContext('2d')!
   const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
-  g.addColorStop(0, 'rgba(255,255,255,1)')
-  g.addColorStop(0.10, 'rgba(255,255,255,0.80)')
-  g.addColorStop(0.30, 'rgba(255,255,255,0.34)')
-  g.addColorStop(0.58, 'rgba(255,255,255,0.11)')
+  g.addColorStop(0, 'rgba(255,255,255,0.95)')
+  g.addColorStop(0.18, 'rgba(255,255,255,0.75)')
+  g.addColorStop(0.45, 'rgba(255,255,255,0.38)')
+  g.addColorStop(0.75, 'rgba(255,255,255,0.12)')
   g.addColorStop(1, 'rgba(255,255,255,0)')
   ctx.fillStyle = g
   ctx.fillRect(0, 0, size, size)
@@ -35,10 +35,7 @@ function makeHaloTexture(): CanvasTexture {
 }
 
 /**
- * The glow around every node — camera-facing quads, additively blended, one
- * draw call for the whole field. Additive means a faded node contributes
- * nothing, and a dense high-risk cluster reads as a bright region rather than
- * a pile of overlapping shapes.
+ * The glow around every node — camera-facing quads, one draw call for the whole field.
  */
 export function HaloLayer({
   positions,
@@ -99,13 +96,13 @@ export function HaloLayer({
       args={[undefined, undefined, Math.max(1, count)]}
       frustumCulled={false}
       raycast={() => null}
-      renderOrder={3}
+      renderOrder={1}
     >
       <planeGeometry args={[1, 1]} />
       <meshBasicMaterial
         map={texture}
         transparent
-        blending={AdditiveBlending}
+        opacity={0.85}
         depthWrite={false}
         toneMapped={false}
         fog={false}

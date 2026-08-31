@@ -72,10 +72,10 @@ export function Timeline() {
                   })
                 }}
                 className={clsx(
-                  'h-full w-full border-l px-2.5 py-1.5 text-left transition-colors',
+                  'h-full w-full rounded-xl border-l px-2.5 py-1.5 text-left transition-colors',
                   active
                     ? 'border-accent bg-accent/[0.06]'
-                    : 'border-line-strong hover:border-ghost hover:bg-white/[0.02]',
+                    : 'border-line-strong hover:border-ghost hover:bg-black/[0.02]',
                 )}
               >
                 <div className="flex items-baseline gap-2">

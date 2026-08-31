@@ -5,9 +5,9 @@ import type { PatternId } from '@/types'
  * counts and spacing match what the detector actually looks for.
  */
 export function PatternGlyph({ id, active }: { id: PatternId; active?: boolean }) {
-  const stroke = active ? '#E3BE5C' : '#3A4046'
-  const node = active ? '#E3BE5C' : '#6C767E'
-  const faint = active ? 'rgba(227,190,92,0.4)' : '#2B3238'
+  const stroke = active ? '#2B59C3' : '#B4C7D7'
+  const node = active ? '#2B59C3' : '#6E8896'
+  const faint = active ? 'rgba(43,89,195,0.35)' : '#D8E3EC'
 
   return (
     <svg viewBox="0 0 132 60" className="h-[58px] w-full" role="img" aria-label={id}>
@@ -45,7 +45,7 @@ export function PatternGlyph({ id, active }: { id: PatternId; active?: boolean }
               <text
                 x={x}
                 y={52}
-                fill={active ? '#8B9299' : '#4A5259'}
+                fill={active ? '#2B59C3' : '#6E8896'}
                 fontSize={6}
                 fontFamily="IBM Plex Mono, monospace"
                 textAnchor="middle"

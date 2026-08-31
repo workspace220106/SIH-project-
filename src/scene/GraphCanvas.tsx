@@ -23,8 +23,8 @@ export function GraphCanvas({ children, clearOnMiss = true, className, paused }:
       gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', stencil: false }}
       camera={{ position: [24, 74, 236], fov: 40, near: 0.5, far: 1200 }}
       onCreated={({ scene, gl }) => {
-        scene.background = new Color('#08090A')
-        gl.setClearColor('#08090A', 1)
+        scene.background = new Color('#FBFBFF')
+        gl.setClearColor('#FBFBFF', 1)
       }}
       onPointerMissed={() => {
         if (clearOnMiss) select(null)

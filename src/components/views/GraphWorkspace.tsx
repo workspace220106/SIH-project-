@@ -60,9 +60,9 @@ export function GraphWorkspace() {
 
       {/* Why the field looks the way it does — the only always-on annotation */}
       {highlight && (
-        <div className="panel pointer-events-auto absolute left-3 top-[46px] z-20 flex max-w-[520px] animate-reveal-up items-center gap-3 px-3 py-1.5">
-          <span className="h-[7px] w-[7px] shrink-0 bg-accent" />
-          <span className="truncate font-mono text-2xs uppercase tracking-[0.13em] text-accent">
+        <div className="panel pointer-events-auto absolute left-3 top-[48px] z-20 flex max-w-[520px] animate-reveal-up items-center gap-3 rounded-2xl px-3.5 py-2 shadow-sm">
+          <span className="h-[7px] w-[7px] shrink-0 rounded-full bg-accent" />
+          <span className="truncate font-mono text-2xs uppercase tracking-[0.13em] text-accent font-medium">
             {highlight.label}
           </span>
           <button
@@ -79,7 +79,7 @@ export function GraphWorkspace() {
       {panelOpen ? (
         <aside
           className={clsx(
-            'panel pointer-events-auto absolute right-3 top-3 z-20 flex w-[344px] animate-reveal-up flex-col xl:w-[368px]',
+            'panel pointer-events-auto absolute right-3 top-3 z-20 flex w-[344px] animate-reveal-up flex-col rounded-2xl overflow-hidden shadow-lg xl:w-[368px]',
             compact && showTimeline ? 'bottom-[136px]' : 'bottom-3',
           )}
         >
@@ -101,17 +101,17 @@ export function GraphWorkspace() {
                   aria-current={panel === t.id ? 'true' : undefined}
                   className={clsx(
                     'relative flex-1 py-2 font-mono text-3xs uppercase tracking-[0.14em] transition-colors',
-                    panel === t.id ? 'text-accent' : 'text-faint hover:text-ink',
+                    panel === t.id ? 'text-accent font-medium' : 'text-faint hover:text-ink',
                   )}
                 >
                   {t.label}
-                  {panel === t.id && <span className="absolute inset-x-0 bottom-0 h-px bg-accent" />}
+                  {panel === t.id && <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-accent" />}
                 </button>
               ))
             )}
             <button
               type="button"
-              className="border-l border-line px-2 font-mono text-3xs text-faint hover:text-ink"
+              className="border-l border-line px-3 font-mono text-3xs text-faint hover:text-ink"
               onClick={() => setPanelOpen(false)}
               aria-label="Close panel"
             >
@@ -129,7 +129,7 @@ export function GraphWorkspace() {
       ) : (
         <button
           type="button"
-          className="btn panel pointer-events-auto absolute right-3 top-3 z-20"
+          className="btn panel pointer-events-auto absolute right-3 top-3 z-20 rounded-xl"
           onClick={() => setPanelOpen(true)}
         >
           {selectedId ? 'Open panel' : 'Intelligence'}
@@ -140,7 +140,7 @@ export function GraphWorkspace() {
       {showTimeline && (
         <div
           className={clsx(
-            'panel pointer-events-auto absolute bottom-3 left-3 z-20 h-[118px] animate-reveal-up',
+            'panel pointer-events-auto absolute bottom-3 left-3 z-20 h-[118px] animate-reveal-up rounded-2xl overflow-hidden shadow-md',
             !compact && panelOpen ? 'right-[360px] xl:right-[384px]' : 'right-3',
           )}
         >
@@ -164,7 +164,7 @@ function HopControl() {
   const hops = useNexus((s) => s.hops)
   const setHops = useNexus((s) => s.setHops)
   return (
-    <div className="panel flex items-stretch">
+    <div className="panel flex items-stretch rounded-xl overflow-hidden shadow-sm">
       <span className="flex items-center px-2.5 font-mono text-3xs uppercase tracking-[0.16em] text-ghost">
         HOPS
       </span>
@@ -175,7 +175,7 @@ function HopControl() {
           onClick={() => setHops(h)}
           className={clsx(
             'w-7 border-l border-line font-mono text-2xs tabular-nums transition-colors',
-            hops === h ? 'bg-accent/[0.08] text-accent' : 'text-faint hover:text-ink',
+            hops === h ? 'bg-accent/[0.08] text-accent font-medium' : 'text-faint hover:text-ink',
           )}
         >
           {h}

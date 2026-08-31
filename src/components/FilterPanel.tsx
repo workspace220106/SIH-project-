@@ -37,18 +37,18 @@ export function FilterPanel() {
     <div className="relative">
       <button
         type="button"
-        className={clsx('btn panel', (open || active) && 'btn-active')}
+        className={clsx('btn panel rounded-xl', (open || active) && 'btn-active')}
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
       >
         Filters
-        {active && <span className="h-[5px] w-[5px] bg-accent" />}
+        {active && <span className="h-[6px] w-[6px] rounded-full bg-accent" />}
       </button>
 
       {open && (
-        <div className="panel regmark absolute left-0 top-[34px] z-30 w-[236px] animate-reveal-up p-3">
+        <div className="panel regmark absolute left-0 top-[36px] z-30 w-[240px] animate-reveal-up rounded-2xl p-3.5 shadow-md">
           <Group title="RISK">
-            <div className="flex gap-1">
+            <div className="flex gap-1.5">
               {RISK_PRESETS.map(([label, v]) => (
                 <Chip
                   key={label}
@@ -119,8 +119,8 @@ function Chip({ label, on, onClick }: { label: string; on: boolean; onClick: () 
       type="button"
       onClick={onClick}
       className={clsx(
-        'flex-1 border py-[3px] font-mono text-3xs tracking-[0.1em] transition-colors',
-        on ? 'border-accent/60 bg-accent/[0.08] text-accent' : 'border-line-strong text-faint hover:text-ink',
+        'flex-1 border py-[4px] px-1 rounded-full font-mono text-3xs tracking-[0.1em] transition-colors',
+        on ? 'border-accent/60 bg-accent/[0.08] text-accent font-medium' : 'border-line-strong text-faint hover:text-ink',
       )}
     >
       {label}
@@ -138,14 +138,14 @@ function Toggle({ label, on, onChange }: { label: string; on: boolean; onChange:
     >
       <span
         className={clsx(
-          'h-[9px] w-[9px] border transition-colors',
+          'h-[10px] w-[10px] rounded-full border transition-colors',
           on ? 'border-accent bg-accent' : 'border-line-strong',
         )}
       />
       <span
         className={clsx(
           'font-mono text-2xs uppercase tracking-[0.12em] transition-colors',
-          on ? 'text-ink' : 'text-faint group-hover:text-muted',
+          on ? 'text-ink font-medium' : 'text-faint group-hover:text-muted',
         )}
       >
         {label}

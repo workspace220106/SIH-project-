@@ -55,7 +55,7 @@ export function Intake() {
               take(e.dataTransfer.files)
             }}
             className={clsx(
-              'regmark mt-6 flex flex-col items-center justify-center border border-dashed px-6 py-12 transition-colors',
+              'regmark mt-6 flex flex-col items-center justify-center rounded-2xl border border-dashed px-6 py-12 shadow-sm transition-colors',
               dragging ? 'border-accent bg-accent/[0.04]' : 'border-line-strong bg-surface/60',
             )}
           >
@@ -65,7 +65,7 @@ export function Intake() {
             </span>
             <button
               type="button"
-              className="btn mt-5"
+              className="btn btn-primary mt-5 rounded-xl shadow-sm"
               onClick={() => inputRef.current?.click()}
               disabled={ingest.busy}
             >
@@ -102,7 +102,7 @@ export function Intake() {
           </div>
 
           {ingest.error && (
-            <div className="mt-4 border border-risk-high/60 bg-risk-high/[0.06] px-4 py-3">
+            <div className="mt-4 rounded-xl border border-risk-high/60 bg-risk-high/[0.06] px-4 py-3">
               <div className="flex items-baseline justify-between">
                 <span className="font-mono text-2xs uppercase tracking-[0.14em] text-risk-high">
                   Import failed
@@ -118,7 +118,7 @@ export function Intake() {
           {/* Pipeline */}
           <section className="mt-7">
             <Label>Pipeline</Label>
-            <ol className="mt-3 border border-line">
+            <ol className="mt-3 overflow-hidden rounded-2xl border border-line bg-surface/80 shadow-sm">
               {INGEST_STAGES.map((s, i) => {
                 const done = ingest.stage > i + 1 || (!ingest.busy && ingest.stage === 6)
                 const active = ingest.stage === i + 1
@@ -126,7 +126,7 @@ export function Intake() {
                   <li
                     key={s.key}
                     className={clsx(
-                      'grid grid-cols-[26px_112px_1fr_54px] items-center gap-3 border-b border-line px-3 py-2 last:border-b-0',
+                      'grid grid-cols-[26px_112px_1fr_54px] items-center gap-3 border-b border-line px-3.5 py-2.5 last:border-b-0',
                       active && 'bg-accent/[0.05]',
                     )}
                   >
@@ -136,7 +136,7 @@ export function Intake() {
                     <span
                       className={clsx(
                         'font-mono text-2xs uppercase tracking-[0.16em]',
-                        active ? 'text-accent' : done ? 'text-ink' : 'text-faint',
+                        active ? 'text-accent font-medium' : done ? 'text-ink' : 'text-faint',
                       )}
                     >
                       {s.label}
@@ -145,7 +145,7 @@ export function Intake() {
                     <span
                       className={clsx(
                         'text-right font-mono text-3xs uppercase tracking-[0.12em]',
-                        active ? 'text-accent' : done ? 'text-muted' : 'text-ghost',
+                        active ? 'text-accent font-medium' : done ? 'text-muted' : 'text-ghost',
                       )}
                     >
                       {active ? 'RUN' : done ? 'OK' : '—'}
@@ -165,7 +165,7 @@ export function Intake() {
                   {ingest.parse.rejected.length} shown
                 </span>
               </div>
-              <ul className="mt-2 max-h-[180px] overflow-y-auto border border-line">
+              <ul className="mt-2 max-h-[180px] overflow-y-auto rounded-xl border border-line bg-surface/80">
                 {ingest.parse.rejected.map((r) => (
                   <li
                     key={r.row}
@@ -182,7 +182,7 @@ export function Intake() {
           {/* Schema */}
           <section className="mt-7">
             <Label>Expected fields</Label>
-            <table className="mt-3 w-full border-collapse border border-line">
+            <table className="mt-3 w-full border-collapse overflow-hidden rounded-2xl border border-line bg-surface/80 shadow-sm">
               <thead>
                 <tr className="border-b border-line">
                   <Th>FIELD</Th>
@@ -210,7 +210,7 @@ export function Intake() {
 
         {/* Current dataset */}
         <aside className="lg:sticky lg:top-6 lg:self-start">
-          <div className="panel-solid regmark">
+          <div className="panel-solid regmark rounded-2xl overflow-hidden shadow-md">
             <div className="flex items-baseline justify-between border-b border-line px-4 py-2.5">
               <span className="display text-[11px] tracking-[0.16em] text-ink">LOADED CAPTURE</span>
               <span

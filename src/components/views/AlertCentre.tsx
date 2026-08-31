@@ -65,9 +65,9 @@ export function AlertCentre() {
                 type="button"
                 onClick={() => setMinPriority(p)}
                 className={clsx(
-                  'border px-2 py-[3px] font-mono text-3xs uppercase tracking-[0.12em] transition-colors',
+                  'border px-2.5 py-[3px] rounded-full font-mono text-3xs uppercase tracking-[0.12em] transition-colors',
                   minPriority === p
-                    ? 'border-accent/60 bg-accent/[0.08] text-accent'
+                    ? 'border-accent/60 bg-accent/[0.08] text-accent font-medium'
                     : 'border-line-strong text-faint hover:text-ink',
                 )}
               >

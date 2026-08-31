@@ -24,9 +24,9 @@ export function Command() {
 
   return (
     <div className="pointer-events-none absolute inset-0">
-      {/* Counters — a single hairline row, not four cards */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex">
-        <div className="pointer-events-auto grid grid-cols-4 divide-x divide-line border-b border-r border-line bg-void/80 backdrop-blur-md">
+      {/* Counters — a floating rounded pill row */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex p-3">
+        <div className="pointer-events-auto grid grid-cols-4 divide-x divide-line rounded-2xl border border-line bg-surface/90 shadow-sm backdrop-blur-md overflow-hidden">
           <Counter k="ENTITIES" v={analysis.entities.length} />
           <Counter k="TRANSACTIONS" v={analysis.dataset.stats.transactions} />
           <Counter k="OPEN ALERTS" v={analysis.alerts.length} />
@@ -35,7 +35,7 @@ export function Command() {
       </div>
 
       {/* Subject summary */}
-      <aside className="panel pointer-events-auto absolute right-3 top-3 z-20 w-[318px]">
+      <aside className="panel pointer-events-auto absolute right-3 top-3 z-20 w-[318px] overflow-hidden">
         <div className="border-b border-line px-4 py-2.5">
           <div className="flex items-baseline justify-between">
             <Label>Top subject</Label>
@@ -80,7 +80,7 @@ export function Command() {
       </aside>
 
       {/* Recent leads */}
-      <section className="panel pointer-events-auto absolute bottom-3 left-3 z-20 w-[440px]">
+      <section className="panel pointer-events-auto absolute bottom-3 left-3 z-20 w-[440px] overflow-hidden">
         <div className="flex items-baseline justify-between border-b border-line px-4 py-2">
           <span className="display text-[11px] tracking-[0.16em] text-ink">
             RECENT INVESTIGATIVE LEADS

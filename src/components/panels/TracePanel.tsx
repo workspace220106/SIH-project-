@@ -41,16 +41,16 @@ export function TracePanel() {
     <div className="flex h-full flex-col overflow-hidden">
       <header className="border-b border-line px-4 py-3">
         <Label>Money flow</Label>
-        <div className="mt-2 flex gap-1">
+        <div className="mt-2 flex gap-1.5">
           {(['forward', 'backward'] as const).map((d) => (
             <button
               key={d}
               type="button"
               onClick={() => runTrace(d, depth)}
               className={clsx(
-                'flex-1 border py-[5px] font-mono text-3xs uppercase tracking-[0.14em] transition-colors',
+                'flex-1 border py-[5px] rounded-xl font-mono text-3xs uppercase tracking-[0.14em] transition-colors',
                 direction === d
-                  ? 'border-accent/60 bg-accent/[0.08] text-accent'
+                  ? 'border-accent/60 bg-accent/[0.08] text-accent font-medium'
                   : 'border-line-strong text-faint hover:text-ink',
               )}
             >
@@ -58,16 +58,16 @@ export function TracePanel() {
             </button>
           ))}
         </div>
-        <div className="mt-1 flex gap-1">
+        <div className="mt-1.5 flex gap-1.5">
           {[3, 5, 10].map((d) => (
             <button
               key={d}
               type="button"
               onClick={() => runTrace(direction, d)}
               className={clsx(
-                'flex-1 border py-[4px] font-mono text-3xs transition-colors',
+                'flex-1 border py-[4px] rounded-full font-mono text-3xs transition-colors',
                 depth === d
-                  ? 'border-accent/60 bg-accent/[0.08] text-accent'
+                  ? 'border-accent/60 bg-accent/[0.08] text-accent font-medium'
                   : 'border-line-strong text-faint hover:text-ink',
               )}
             >
@@ -159,7 +159,7 @@ function Node({
 }) {
   const content = (
     <span className="flex items-center gap-2">
-      <span className={clsx('h-[7px] w-[7px] border', root ? 'border-accent bg-accent' : 'border-muted')} />
+      <span className={clsx('h-[8px] w-[8px] rounded-full border', root ? 'border-accent bg-accent' : 'border-muted')} />
       <span className={clsx('font-mono text-[11.5px]', root ? 'text-accent' : 'text-ink')}>{label}</span>
     </span>
   )

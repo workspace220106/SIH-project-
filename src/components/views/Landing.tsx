@@ -126,7 +126,7 @@ export function Landing() {
       {/* Persistent frame */}
       <div className="pointer-events-none fixed inset-x-0 top-0 z-20 flex items-center justify-between px-6 py-5">
         <div>
-          <div className="display text-[17px] font-700 leading-none tracking-[0.24em] text-ink">
+          <div className="display text-[17px] font-700 leading-none tracking-[0.24em] text-accent">
             NEXUS
           </div>
           <div className="mt-1.5 font-mono text-3xs uppercase tracking-[0.18em] text-faint">
@@ -143,8 +143,6 @@ export function Landing() {
           </button>
         </div>
       </div>
-
-      <ActIndex act={act} onJump={(i) => jumpTo(scrollerRef.current, i)} />
 
       {/* Story */}
       <div ref={scrollerRef} className="relative z-10 h-full overflow-y-auto overflow-x-hidden">
@@ -173,7 +171,7 @@ export function Landing() {
                   {String(i + 1).padStart(2, '0')} · {a.id}
                 </Eyebrow>
               )}
-              <h2 className="mt-4 font-display text-[30px] font-600 leading-[1.12] tracking-[-0.01em] text-ink sm:text-[38px]">
+              <h2 className="mt-4 font-display text-[30px] font-600 leading-[1.12] tracking-[-0.01em] text-accent sm:text-[38px]">
                 {a.title}
               </h2>
               <p className="mt-4 max-w-[440px] text-[14px] leading-[1.62] text-muted">
@@ -228,52 +226,13 @@ function MotionToggle() {
   )
 }
 
-function jumpTo(el: HTMLDivElement | null, index: number) {
-  if (!el) return
-  el.scrollTo({ top: index * el.clientHeight, behavior: 'smooth' })
-}
-
-function ActIndex({ act, onJump }: { act: number; onJump: (i: number) => void }) {
-  return (
-    <nav
-      className="fixed right-6 top-1/2 z-20 hidden -translate-y-1/2 flex-col items-end gap-2 lg:flex"
-      aria-label="Sequence"
-    >
-      {ACTS.map((a, i) => (
-        <button
-          key={a.id}
-          type="button"
-          onClick={() => onJump(i)}
-          className="group flex items-center gap-2"
-          aria-current={act === i ? 'step' : undefined}
-        >
-          <span
-            className={clsx(
-              'font-mono text-3xs uppercase tracking-[0.16em] transition-colors',
-              act === i ? 'text-accent' : 'text-ghost group-hover:text-muted',
-            )}
-          >
-            {a.id}
-          </span>
-          <span
-            className={clsx(
-              'h-px transition-all duration-300',
-              act === i ? 'w-7 bg-accent' : 'w-3 bg-line-strong group-hover:w-5',
-            )}
-          />
-        </button>
-      ))}
-    </nav>
-  )
-}
-
 /* ---- act cards ------------------------------------------------------- */
 
 function DispersionCard() {
   const pattern = useNexus((s) => s.analysis?.patterns.find((p) => p.id === 'FAN_OUT'))
   if (!pattern) return null
   return (
-    <div className="regmark mt-7 border border-line bg-surface/80 p-4 backdrop-blur-md">
+    <div className="regmark mt-7 rounded-2xl border border-line bg-surface/80 p-5 shadow-sm backdrop-blur-md">
       <div className="flex items-baseline justify-between">
         <span className="label-active">FAN-OUT</span>
         <span className="font-mono text-2xs text-muted">
@@ -294,9 +253,9 @@ function VelocityCard() {
   const patterns = useNexus((s) => s.analysis?.patterns ?? [])
   const shown = patterns.filter((p) => p.id === 'RAPID_MOVEMENT' || p.id === 'PEELING')
   return (
-    <div className="mt-7 space-y-2">
+    <div className="mt-7 space-y-2 rounded-2xl border border-line bg-surface/80 p-4 shadow-sm backdrop-blur-md">
       {shown.map((p) => (
-        <div key={p.id} className="flex items-baseline gap-3 border-b border-line pb-2 text-left">
+        <div key={p.id} className="flex items-baseline gap-3 border-b border-line pb-2 text-left last:border-0 last:pb-0">
           <span className="label-active w-[86px] shrink-0">{p.shortName}</span>
           <span className="font-mono text-[11.5px] text-muted">{p.formula}</span>
         </div>
@@ -312,7 +271,7 @@ function ScoreCard() {
   if (!subject) return null
 
   return (
-    <div className="regmark regmark-accent mt-7 border border-line bg-surface/85 p-5 text-left backdrop-blur-md">
+    <div className="regmark regmark-accent mt-7 rounded-2xl border border-line bg-surface/85 p-5 text-left shadow-sm backdrop-blur-md">
       <div className="flex items-end gap-6">
         <div>
           <span className="label">Composite risk</span>
@@ -322,7 +281,7 @@ function ScoreCard() {
           {subject.risk.signals.map((s) => (
             <div key={s.key} className="flex items-center gap-3">
               <span className="label w-[74px] shrink-0">{s.label}</span>
-              <Meter value={s.value} tone="neutral" height={2} />
+              <Meter value={s.value} tone="neutral" height={3} />
               <span className="w-6 shrink-0 text-right font-mono text-2xs tabular-nums text-muted">
                 {s.value}
               </span>
@@ -344,14 +303,14 @@ function ScoreCard() {
 
 function WorkspaceCard() {
   return (
-    <div className="mt-7 grid grid-cols-2 gap-px border border-line bg-line text-left">
+    <div className="mt-7 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line text-left shadow-sm">
       {[
         ['SELECT', 'Camera moves, neighbours resolve, unrelated nodes fade'],
         ['EXPAND', 'Pull the next hop into view, up to ten'],
         ['TRACE', 'Follow value forward or backward through the chain'],
         ['EXPLAIN', 'Each reason highlights the exact evidence in the graph'],
       ].map(([k, v]) => (
-        <div key={k} className="bg-surface/85 p-3 backdrop-blur-md">
+        <div key={k} className="bg-surface/85 p-3.5 backdrop-blur-md">
           <div className="label-active">{k}</div>
           <div className="mt-1.5 text-[11.5px] leading-snug text-muted">{v}</div>
         </div>
@@ -374,7 +333,7 @@ function LeadCard({
   next: string
 }) {
   return (
-    <div className="regmark regmark-accent mt-7 border border-line bg-surface/88 p-5 text-left backdrop-blur-md">
+    <div className="regmark regmark-accent mt-7 rounded-2xl border border-line bg-surface/88 p-5 text-left shadow-sm backdrop-blur-md">
       <div className="flex items-baseline justify-between border-b border-line pb-2">
         <span className="display text-[13px] tracking-[0.16em] text-ink">
           INVESTIGATIVE LEAD {leadId.replace('LEAD-', '#00')}
@@ -386,7 +345,7 @@ function LeadCard({
         <Row k="WHAT" v={what} />
         <Row k="NEXT" v={next} />
       </dl>
-      <button type="button" className="btn btn-primary mt-5 h-[34px] w-full justify-center" onClick={onEnter}>
+      <button type="button" className="btn btn-primary mt-5 h-[36px] w-full justify-center" onClick={onEnter}>
         Investigate
       </button>
     </div>

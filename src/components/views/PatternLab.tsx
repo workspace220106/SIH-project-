@@ -111,7 +111,7 @@ export function PatternLab() {
       <div className="relative min-w-0 flex-1">
         <div
           key={active}
-          className="panel pointer-events-auto absolute left-4 top-4 z-20 w-[400px] animate-reveal-up"
+          className="panel pointer-events-auto absolute left-4 top-4 z-20 w-[400px] animate-reveal-up rounded-2xl overflow-hidden shadow-md"
         >
           <div className="border-b border-line px-4 py-2.5">
             <div className="flex items-baseline justify-between">

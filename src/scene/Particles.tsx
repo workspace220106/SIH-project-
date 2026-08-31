@@ -84,7 +84,7 @@ export function FlowParticles({ buffers, targets, still }: Props) {
       <pointsMaterial
         size={1.5}
         sizeAttenuation
-        color="#E3BE5C"
+        color="#2B59C3"
         transparent
         opacity={0.9}
         blending={AdditiveBlending}

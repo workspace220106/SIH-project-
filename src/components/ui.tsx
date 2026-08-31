@@ -44,7 +44,7 @@ export function SectionHead({
 }) {
   return (
     <div className="flex items-baseline justify-between gap-4 border-b border-line px-4 py-2.5">
-      <h2 className="display text-[12px] font-600 tracking-[0.14em] text-ink">{title}</h2>
+      <h2 className="display text-[12px] font-600 tracking-[0.14em] text-accent">{title}</h2>
       <div className="flex items-center gap-3">
         {meta && <span className="font-mono text-3xs uppercase tracking-[0.14em] text-faint">{meta}</span>}
         {action}
@@ -94,7 +94,7 @@ const PRIORITY_STYLE: Record<Priority, string> = {
 }
 
 export function PriorityChip({ priority, className }: { priority: Priority; className?: string }) {
-  return <span className={clsx('chip', PRIORITY_STYLE[priority], className)}>{priority}</span>
+  return <span className={clsx('chip rounded-full px-2.5 py-0.5', PRIORITY_STYLE[priority], className)}>{priority}</span>
 }
 
 export function riskTone(score: number): string {
@@ -116,7 +116,7 @@ export function Meter({
   value,
   max = 100,
   tone = 'accent',
-  height = 3,
+  height = 4,
 }: {
   value: number
   max?: number
@@ -125,10 +125,10 @@ export function Meter({
 }) {
   const pct = Math.max(0, Math.min(100, (value / max) * 100))
   return (
-    <div className="w-full bg-line" style={{ height }}>
+    <div className="w-full bg-line rounded-full overflow-hidden" style={{ height }}>
       <div
         className={clsx(
-          'h-full origin-left transition-[width] duration-500 ease-instrument',
+          'h-full rounded-full origin-left transition-[width] duration-500 ease-instrument',
           tone === 'accent' ? 'bg-accent' : tone === 'risk' ? riskBar(value) : 'bg-muted',
         )}
         style={{ width: pct + '%' }}
@@ -141,7 +141,7 @@ export function StatusDot({ tone = 'ok' }: { tone?: 'ok' | 'warn' | 'idle' }) {
   return (
     <span
       className={clsx(
-        'inline-block h-[5px] w-[5px]',
+        'inline-block h-[6px] w-[6px] rounded-full',
         tone === 'ok' ? 'bg-accent' : tone === 'warn' ? 'bg-risk-high' : 'bg-ghost',
       )}
     />
@@ -166,7 +166,7 @@ export function Panel({
   return (
     <div
       className={clsx(
-        'regmark',
+        'regmark rounded-2xl overflow-hidden',
         solid ? 'panel-solid' : 'panel',
         accent && 'regmark-accent',
         className,

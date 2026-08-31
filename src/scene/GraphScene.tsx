@@ -42,7 +42,7 @@ export function GraphScene({
   return (
     <>
       <CameraRig enabled={interactive} autoRotate={autoRotate && !reduced} />
-      <fog attach="fog" args={['#08090A', 110, 430]} />
+      <fog attach="fog" args={['#FBFBFF', 110, 430]} />
       <Dust />
       {showRings && <RangeRings />}
 

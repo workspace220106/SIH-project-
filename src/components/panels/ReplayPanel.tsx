@@ -76,9 +76,9 @@ export function ReplayPanel() {
                 type="button"
                 onClick={() => setReplay({ speed: s })}
                 className={clsx(
-                  'flex-1 border py-[3px] font-mono text-3xs tabular-nums transition-colors',
+                  'flex-1 border py-[4px] rounded-full font-mono text-3xs tabular-nums transition-colors',
                   replay.speed === s
-                    ? 'border-accent/60 bg-accent/[0.08] text-accent'
+                    ? 'border-accent/60 bg-accent/[0.08] text-accent font-medium'
                     : 'border-line-strong text-faint hover:text-ink',
                 )}
               >
@@ -98,8 +98,8 @@ export function ReplayPanel() {
             aria-label="Replay position"
             onChange={(e) => setReplay({ cursor: Number(e.target.value), playing: false })}
           />
-          <div className="relative h-[3px] bg-line">
-            <div className="h-full bg-accent" style={{ width: pct + '%' }} />
+          <div className="relative h-[4px] rounded-full overflow-hidden bg-line">
+            <div className="h-full rounded-full bg-accent" style={{ width: pct + '%' }} />
           </div>
           <div className="mt-1 flex justify-between font-mono text-3xs text-ghost">
             <span>{track.length ? fmtTime(track[0].timestamp) : '—'}</span>

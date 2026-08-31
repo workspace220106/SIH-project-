@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    color-scheme: dark;
+    color-scheme: light;
     --rail-top: 30px;
     --rail-left: 54px;
   }
@@ -29,8 +29,8 @@
   }
 
   ::selection {
-    background: rgba(227, 190, 92, 0.22);
-    color: #f4f6f8;
+    background: rgba(43, 89, 195, 0.18);
+    color: #000000;
   }
 
   :focus-visible {
@@ -38,20 +38,21 @@
     outline-offset: 2px;
   }
 
-  /* Instrument scrollbars — thin, present, never decorative */
+  /* Instrument scrollbars — smooth rounded pill */
   ::-webkit-scrollbar {
     width: 9px;
     height: 9px;
   }
   ::-webkit-scrollbar-track {
-    background: #0a0c0d;
+    background: #FBFBFF;
   }
   ::-webkit-scrollbar-thumb {
-    background: #24292e;
-    border: 2px solid #0a0c0d;
+    background: #D8E3EC;
+    border: 2px solid #FBFBFF;
+    border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #333a40;
+    background: #B4C7D7;
   }
 
   canvas {
@@ -63,62 +64,65 @@
 @layer components {
   /* ---- Typographic registers ---------------------------------------- */
   .label {
-    @apply font-mono text-3xs uppercase text-faint;
+    @apply font-mono text-3xs uppercase text-black font-semibold;
     letter-spacing: 0.16em;
   }
   .label-active {
-    @apply font-mono text-3xs uppercase text-accent;
+    @apply font-mono text-3xs uppercase text-accent font-semibold;
     letter-spacing: 0.16em;
   }
   .value {
-    @apply font-mono text-[12px] text-ink tabular-nums;
+    @apply font-mono text-[12px] text-black tabular-nums font-semibold;
   }
   .display {
-    @apply font-display uppercase;
+    @apply font-display uppercase text-black font-semibold;
     font-stretch: 112%;
     letter-spacing: 0.02em;
   }
   .num {
-    @apply font-display tabular-nums;
+    @apply font-display tabular-nums text-black font-semibold;
     font-stretch: 108%;
     font-feature-settings: 'tnum' 1;
   }
 
-  /* ---- Surfaces ------------------------------------------------------ */
+  /* ---- Surfaces (All Curvy Rounded) --------------------------------- */
   .panel {
-    @apply bg-surface/[0.94] border border-line backdrop-blur-[10px];
+    @apply rounded-2xl bg-surface/[0.94] border border-line backdrop-blur-[10px] shadow-sm;
   }
   .panel-solid {
-    @apply bg-surface border border-line;
+    @apply rounded-2xl bg-surface border border-line shadow-sm;
   }
   .hairline {
     @apply border-t border-line;
   }
 
-  /* ---- Registration marks: the instrument signature ------------------ */
+  /* ---- Registration marks: curvy instrument signature --------------- */
   .regmark {
     position: relative;
+    border-radius: 1rem;
   }
   .regmark::before,
   .regmark::after {
     content: '';
     position: absolute;
-    width: 7px;
-    height: 7px;
+    width: 9px;
+    height: 9px;
     pointer-events: none;
     opacity: 0.85;
   }
   .regmark::before {
     top: -1px;
     left: -1px;
-    border-top: 1px solid theme('colors.line-strong');
-    border-left: 1px solid theme('colors.line-strong');
+    border-top: 1.5px solid theme('colors.line-strong');
+    border-left: 1.5px solid theme('colors.line-strong');
+    border-top-left-radius: 8px;
   }
   .regmark::after {
     bottom: -1px;
     right: -1px;
-    border-bottom: 1px solid theme('colors.line-strong');
-    border-right: 1px solid theme('colors.line-strong');
+    border-bottom: 1.5px solid theme('colors.line-strong');
+    border-right: 1.5px solid theme('colors.line-strong');
+    border-bottom-right-radius: 8px;
   }
   .regmark-accent::before,
   .regmark-accent::after {
@@ -126,32 +130,32 @@
     opacity: 1;
   }
 
-  /* ---- Controls ------------------------------------------------------ */
+  /* ---- Controls (Curvy Rounded) ------------------------------------- */
   .btn {
-    @apply font-mono text-2xs uppercase px-3 h-[28px] inline-flex items-center gap-2
-           border border-line-strong text-muted bg-transparent
+    @apply font-mono text-2xs uppercase px-3.5 h-[30px] rounded-xl inline-flex items-center gap-2
+           border border-line-strong text-ink bg-transparent
            transition-colors duration-150;
     letter-spacing: 0.14em;
   }
   .btn:hover:not(:disabled) {
-    @apply text-ink border-ghost bg-white/[0.03];
+    @apply text-ink border-ghost bg-black/[0.04];
   }
   .btn:disabled {
     @apply opacity-35 cursor-not-allowed;
   }
   .btn-primary {
-    @apply text-void border-accent bg-accent font-medium;
+    @apply text-white border-accent bg-accent font-medium rounded-xl shadow-sm;
   }
   .btn-primary:hover:not(:disabled) {
-    background: #f0cf72;
-    @apply text-void border-[#f0cf72];
+    background: #1e44a3;
+    @apply text-white border-[#1e44a3];
   }
   .btn-active {
-    @apply text-accent border-accent/60 bg-accent/[0.07];
+    @apply text-accent border-accent/60 bg-accent/[0.08] rounded-xl;
   }
 
   .chip {
-    @apply font-mono text-3xs uppercase px-1.5 py-[2px] border;
+    @apply font-mono text-3xs uppercase px-2 py-[2px] rounded-full border;
     letter-spacing: 0.12em;
   }
 
@@ -160,42 +164,46 @@
     @apply border-b border-line/70 transition-colors duration-100;
   }
   .grid-row:hover {
-    background: rgba(255, 255, 255, 0.022);
+    background: rgba(0, 0, 0, 0.035);
   }
 
-
-  /* ---- Range control -------------------------------------------------- */
+  /* ---- Range control (Curvy Pill) ------------------------------------- */
   .slider {
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
-    height: 14px;
+    height: 16px;
     background: transparent;
     cursor: ew-resize;
   }
   .slider::-webkit-slider-runnable-track {
-    height: 1px;
+    height: 4px;
+    border-radius: 9999px;
     background: theme('colors.line-strong');
   }
   .slider::-moz-range-track {
-    height: 1px;
+    height: 4px;
+    border-radius: 9999px;
     background: theme('colors.line-strong');
   }
   .slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 3px;
-    height: 13px;
-    margin-top: -6px;
+    width: 14px;
+    height: 14px;
+    margin-top: -5px;
+    border-radius: 9999px;
     background: theme('colors.accent.DEFAULT');
     border: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
   .slider::-moz-range-thumb {
-    width: 3px;
-    height: 13px;
-    border-radius: 0;
+    width: 14px;
+    height: 14px;
+    border-radius: 9999px;
     background: theme('colors.accent.DEFAULT');
     border: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
   .slider:disabled::-webkit-slider-thumb {
     background: theme('colors.ghost');
@@ -220,8 +228,8 @@
     display: none;
   }
   .grid-bg {
-    background-image: linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+    background-image: linear-gradient(rgba(0, 21, 20, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 21, 20, 0.035) 1px, transparent 1px);
     background-size: 48px 48px;
   }
 }

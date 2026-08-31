@@ -188,7 +188,7 @@ function RecentLeads({ current }: { current: Lead }) {
 /** Report generation is local — the workstation has no outbound path. */
 function downloadReport(lead: Lead) {
   const lines = [
-    'NEXUS — INVESTIGATIVE LEAD #' + String(lead.number).padStart(4, '0'),
+    'TRADELINE — INVESTIGATIVE LEAD #' + String(lead.number).padStart(4, '0'),
     'NTRO · PS 26146 · SYNTHETIC DATA · OFFLINE ENVIRONMENT',
     'GENERATED ' + fmtDateTime(lead.createdAt),
     '',
@@ -220,7 +220,7 @@ function downloadReport(lead: Lead) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = 'NEXUS-LEAD-' + String(lead.number).padStart(4, '0') + '.txt'
+  a.download = 'TRADELINE-LEAD-' + String(lead.number).padStart(4, '0') + '.txt'
   a.click()
   URL.revokeObjectURL(url)
 }

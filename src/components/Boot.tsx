@@ -34,11 +34,11 @@ export function Boot({ onDone }: { onDone: () => void }) {
       className="fixed inset-0 z-50 flex items-center justify-center bg-void"
       onClick={onDone}
       role="status"
-      aria-label="Starting NEXUS"
+      aria-label="Starting TRADELINE"
     >
       <div className="w-[340px]">
         <div className="display text-[30px] font-700 leading-none tracking-[0.24em] text-ink">
-          NEXUS
+          TRADELINE
         </div>
         <div className="mt-2 font-mono text-3xs uppercase tracking-[0.22em] text-faint">
           Bitcoin transaction intelligence · PS 26146

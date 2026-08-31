@@ -126,8 +126,8 @@ export function Landing() {
       {/* Persistent frame */}
       <div className="pointer-events-none fixed inset-x-0 top-0 z-20 flex items-center justify-between px-6 py-5">
         <div>
-          <div className="display text-[17px] font-700 leading-none tracking-[0.24em] text-accent">
-            NEXUS
+          <div className="display text-[15px] font-700 tracking-[0.22em] text-accent">
+            TRADELINE
           </div>
           <div className="mt-1.5 font-mono text-3xs uppercase tracking-[0.18em] text-faint">
             NTRO · PS 26146 · Bitcoin transaction traffic monitoring

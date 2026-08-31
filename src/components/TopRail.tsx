@@ -29,7 +29,7 @@ export function TopRail() {
         className="group flex items-center gap-2.5 pr-3 transition-opacity hover:opacity-85"
       >
         <span className="display text-[18px] font-700 leading-none tracking-[0.22em] text-accent">
-          NEXUS
+          TRADELINE
         </span>
         <span className="hidden items-center gap-1.5 rounded-full border border-accent/60 bg-accent/[0.08] px-2.5 py-[2px] font-mono text-3xs uppercase tracking-[0.14em] text-accent sm:flex">
           <span className="h-[6px] w-[6px] rounded-full bg-accent" />

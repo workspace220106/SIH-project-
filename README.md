@@ -1,9 +1,9 @@
-# NEXUS — Bitcoin Transaction Intelligence
+# TRADELINE — Bitcoin Transaction Intelligence
 
 An offline analyst workstation for Bitcoin transaction traffic monitoring and analysis.
 Built for NTRO, problem statement **PS 26146**.
 
-NEXUS takes a capture of seven fields per record — `txid`, `wallet`, `amount`, `fee`, `ip`,
+TRADELINE takes a capture of seven fields per record — `txid`, `wallet`, `amount`, `fee`, `ip`,
 `port`, `timestamp` — correlates it into a temporal entity graph, runs five behavioural
 detectors over it, scores every wallet, and produces an investigative lead that is anchored to
 the exact nodes and edges that produced it.

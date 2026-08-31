@@ -1,0 +1,238 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    --rail-top: 30px;
+    --rail-left: 54px;
+  }
+
+  * {
+    border-color: theme('colors.line');
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-void text-ink font-sans antialiased;
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: rgba(227, 190, 92, 0.22);
+    color: #f4f6f8;
+  }
+
+  :focus-visible {
+    outline: 1px solid theme('colors.accent.DEFAULT');
+    outline-offset: 2px;
+  }
+
+  /* Instrument scrollbars — thin, present, never decorative */
+  ::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0a0c0d;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #24292e;
+    border: 2px solid #0a0c0d;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #333a40;
+  }
+
+  canvas {
+    display: block;
+    touch-action: none;
+  }
+}
+
+@layer components {
+  /* ---- Typographic registers ---------------------------------------- */
+  .label {
+    @apply font-mono text-3xs uppercase text-faint;
+    letter-spacing: 0.16em;
+  }
+  .label-active {
+    @apply font-mono text-3xs uppercase text-accent;
+    letter-spacing: 0.16em;
+  }
+  .value {
+    @apply font-mono text-[12px] text-ink tabular-nums;
+  }
+  .display {
+    @apply font-display uppercase;
+    font-stretch: 112%;
+    letter-spacing: 0.02em;
+  }
+  .num {
+    @apply font-display tabular-nums;
+    font-stretch: 108%;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  /* ---- Surfaces ------------------------------------------------------ */
+  .panel {
+    @apply bg-surface/[0.94] border border-line backdrop-blur-[10px];
+  }
+  .panel-solid {
+    @apply bg-surface border border-line;
+  }
+  .hairline {
+    @apply border-t border-line;
+  }
+
+  /* ---- Registration marks: the instrument signature ------------------ */
+  .regmark {
+    position: relative;
+  }
+  .regmark::before,
+  .regmark::after {
+    content: '';
+    position: absolute;
+    width: 7px;
+    height: 7px;
+    pointer-events: none;
+    opacity: 0.85;
+  }
+  .regmark::before {
+    top: -1px;
+    left: -1px;
+    border-top: 1px solid theme('colors.line-strong');
+    border-left: 1px solid theme('colors.line-strong');
+  }
+  .regmark::after {
+    bottom: -1px;
+    right: -1px;
+    border-bottom: 1px solid theme('colors.line-strong');
+    border-right: 1px solid theme('colors.line-strong');
+  }
+  .regmark-accent::before,
+  .regmark-accent::after {
+    border-color: theme('colors.accent.DEFAULT');
+    opacity: 1;
+  }
+
+  /* ---- Controls ------------------------------------------------------ */
+  .btn {
+    @apply font-mono text-2xs uppercase px-3 h-[28px] inline-flex items-center gap-2
+           border border-line-strong text-muted bg-transparent
+           transition-colors duration-150;
+    letter-spacing: 0.14em;
+  }
+  .btn:hover:not(:disabled) {
+    @apply text-ink border-ghost bg-white/[0.03];
+  }
+  .btn:disabled {
+    @apply opacity-35 cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply text-void border-accent bg-accent font-medium;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: #f0cf72;
+    @apply text-void border-[#f0cf72];
+  }
+  .btn-active {
+    @apply text-accent border-accent/60 bg-accent/[0.07];
+  }
+
+  .chip {
+    @apply font-mono text-3xs uppercase px-1.5 py-[2px] border;
+    letter-spacing: 0.12em;
+  }
+
+  /* ---- Data table ---------------------------------------------------- */
+  .grid-row {
+    @apply border-b border-line/70 transition-colors duration-100;
+  }
+  .grid-row:hover {
+    background: rgba(255, 255, 255, 0.022);
+  }
+
+
+  /* ---- Range control -------------------------------------------------- */
+  .slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 14px;
+    background: transparent;
+    cursor: ew-resize;
+  }
+  .slider::-webkit-slider-runnable-track {
+    height: 1px;
+    background: theme('colors.line-strong');
+  }
+  .slider::-moz-range-track {
+    height: 1px;
+    background: theme('colors.line-strong');
+  }
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 3px;
+    height: 13px;
+    margin-top: -6px;
+    background: theme('colors.accent.DEFAULT');
+    border: 0;
+  }
+  .slider::-moz-range-thumb {
+    width: 3px;
+    height: 13px;
+    border-radius: 0;
+    background: theme('colors.accent.DEFAULT');
+    border: 0;
+  }
+  .slider:disabled::-webkit-slider-thumb {
+    background: theme('colors.ghost');
+  }
+
+  .rule-dotted {
+    background-image: linear-gradient(to right, theme('colors.line-strong') 1px, transparent 1px);
+    background-size: 4px 1px;
+    height: 1px;
+  }
+}
+
+@layer utilities {
+  .text-shadow-none {
+    text-shadow: none;
+  }
+  .scrim-l {
+    -webkit-mask-image: linear-gradient(to right, transparent, black 44px);
+    mask-image: linear-gradient(to right, transparent, black 44px);
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .grid-bg {
+    background-image: linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

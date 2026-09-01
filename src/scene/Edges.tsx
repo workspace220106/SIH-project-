@@ -15,12 +15,15 @@ interface Props {
  */
 export function EdgeLayer({ buffers, targets }: Props) {
   const ref = useRef<LineSegments>(null)
-  const current = useMemo(() => new Float32Array(buffers.count * 6), [buffers.count])
+  const current = useMemo(
+    () => new Float32Array(buffers.positions.length),
+    [buffers.positions.length],
+  )
 
   const geometry = useMemo(() => {
     const g = new BufferGeometry()
     g.setAttribute('position', new BufferAttribute(buffers.positions, 3))
-    g.setAttribute('color', new BufferAttribute(new Float32Array(buffers.count * 6), 3))
+    g.setAttribute('color', new BufferAttribute(new Float32Array(buffers.positions.length), 3))
     return g
   }, [buffers])
 

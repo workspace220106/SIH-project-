@@ -102,7 +102,7 @@ export function Landing() {
             reveal={reveal}
             revealCluster={revealCluster}
             interactive={false}
-            showClusterLabels={quantised > 0.28 && quantised < 0.9}
+            showClusterLabels={false}
             showRings={quantised > 0.12}
           />
           <StoryCamera
@@ -113,36 +113,29 @@ export function Landing() {
         </GraphCanvas>
       </div>
 
-      {/* Reading scrim — the field stays visible, the text stays legible */}
+      {/* Reading scrim — positioned below header so graph is fully visible through top glass bar */}
       <div
-        className="pointer-events-none fixed inset-y-0 left-0 z-[5] w-[52%] bg-gradient-to-r from-void via-void/80 to-transparent transition-opacity duration-700"
+        className="pointer-events-none fixed bottom-0 left-0 top-24 z-[5] w-[52%] bg-gradient-to-r from-void via-void/80 to-transparent transition-opacity duration-700"
         style={{ opacity: act <= 5 ? 1 : 0 }}
       />
       <div
-        className="pointer-events-none fixed inset-y-0 right-0 z-[5] w-[52%] bg-gradient-to-l from-void via-void/80 to-transparent transition-opacity duration-700"
+        className="pointer-events-none fixed bottom-0 right-0 top-24 z-[5] w-[52%] bg-gradient-to-l from-void via-void/80 to-transparent transition-opacity duration-700"
         style={{ opacity: act > 5 ? 1 : 0 }}
       />
 
-      {/* Persistent frame */}
-      <div className="pointer-events-none fixed inset-x-0 top-0 z-20 flex items-center justify-between px-6 py-5">
+      {/* Crystal Clear See-Through Glassmorphism Header */}
+      <header className="fixed top-3 inset-x-3 z-20 flex items-center justify-between rounded-2xl border border-white/50 bg-white/[0.08] px-5 py-3 shadow-[0_8px_32px_0_rgba(0,0,0,0.05),inset_0_1px_1px_0_rgba(255,255,255,0.9)] backdrop-blur-md backdrop-saturate-150 transition-all sm:top-4 sm:inset-x-6 sm:rounded-3xl sm:px-7 sm:py-3.5 lg:top-5 lg:inset-x-8">
         <div>
-          <div className="display text-[15px] font-700 tracking-[0.22em] text-accent">
+          <div className="display text-[15px] font-700 tracking-[0.22em] text-accent drop-shadow-sm">
             TRADELINE
           </div>
-          <div className="mt-1.5 font-mono text-3xs uppercase tracking-[0.18em] text-faint">
-            NTRO · PS 26146 · Bitcoin transaction traffic monitoring
-          </div>
         </div>
-        <div className="pointer-events-auto flex items-center gap-3">
-          <span className="hidden font-mono text-3xs uppercase tracking-[0.18em] text-faint md:inline">
-            Synthetic data · offline
-          </span>
-          <MotionToggle />
-          <button type="button" className="btn" onClick={enter}>
+        <div className="flex items-center gap-3">
+          <button type="button" className="btn btn-primary shadow-sm" onClick={enter}>
             Skip to workstation
           </button>
         </div>
-      </div>
+      </header>
 
       {/* Story */}
       <div ref={scrollerRef} className="relative z-10 h-full overflow-y-auto overflow-x-hidden">
@@ -159,72 +152,39 @@ export function Landing() {
                 i > 5 && 'ml-auto text-right lg:mr-[104px]',
               )}
             >
-              {i === 4 ? (
-                <div className="flex items-center gap-2">
-                  <span className="h-[7px] w-[7px] shrink-0 animate-ticker bg-accent" />
-                  <span className="font-mono text-3xs uppercase tracking-[0.2em] text-accent">
-                    Suspicious activity detected · dispersion set
-                  </span>
-                </div>
-              ) : (
-                <Eyebrow accent={act === i} className={i > 5 ? 'justify-end' : undefined}>
-                  {String(i + 1).padStart(2, '0')} · {a.id}
-                </Eyebrow>
-              )}
-              <h2 className="mt-4 font-display text-[30px] font-600 leading-[1.12] tracking-[-0.01em] text-accent sm:text-[38px]">
+              <h2 className="font-display text-[30px] font-600 leading-[1.12] tracking-[-0.01em] text-accent sm:text-[38px]">
                 {a.title}
               </h2>
-              <p className="mt-4 max-w-[440px] text-[14px] leading-[1.62] text-muted">
-                {i > 5 ? <span className="block text-right">{a.body}</span> : a.body}
+              <p
+                className={clsx(
+                  'mt-4 max-w-[440px] text-[14px] leading-[1.62] text-muted',
+                  i > 5 && 'ml-auto text-right',
+                )}
+              >
+                {a.body}
               </p>
 
-              {i === 5 && analysis && <DispersionCard />}
-              {i === 6 && analysis && <VelocityCard />}
               {i === 7 && subject && <ScoreCard />}
               {i === 8 && <WorkspaceCard />}
-              {i === 9 && lead && subject && (
-                <LeadCard
-                  onEnter={enter}
-                  subject={shortAddr(subject.address)}
-                  leadId={lead.id}
-                  what={lead.what}
-                  next={shortAddr(lead.nextTarget)}
-                />
+              {i === 9 && (
+                <div className={clsx('mt-6 flex', i > 5 ? 'justify-end' : 'justify-start')}>
+                  <button
+                    type="button"
+                    className="btn btn-primary h-[38px] px-7 shadow-sm"
+                    onClick={enter}
+                  >
+                    Investigate
+                  </button>
+                </div>
               )}
             </div>
           </section>
         ))}
       </div>
-
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-20 flex items-center justify-between border-t border-line bg-void/70 px-6 py-2 backdrop-blur-sm">
-        <span className="font-mono text-3xs uppercase tracking-[0.18em] text-ghost">
-          Scroll to advance · {String(act + 1).padStart(2, '0')} / {SECTION_COUNT}
-        </span>
-        <span className="font-mono text-3xs uppercase tracking-[0.18em] text-ghost">
-          {analysis?.entities.length ?? 0} entities · {analysis?.edges.length ?? 0} relationships
-        </span>
-      </div>
     </div>
   )
 }
 
-/** The sequence is the pitch, so it must be runnable even where the operating
-    system asks for reduced motion. */
-function MotionToggle() {
-  const motion = useNexus((s) => s.motion)
-  const setMotion = useNexus((s) => s.setMotion)
-  const reduced = usePrefersReducedMotion()
-  if (!reduced && motion === 'system') return null
-  return (
-    <button
-      type="button"
-      className="btn"
-      onClick={() => setMotion(reduced ? 'full' : 'system')}
-    >
-      {reduced ? 'Play sequence' : 'Motion: full'}
-    </button>
-  )
-}
 
 /* ---- act cards ------------------------------------------------------- */
 

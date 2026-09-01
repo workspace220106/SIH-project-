@@ -398,7 +398,7 @@ export const useNexus = create<NexusState>((set, get) => ({
     set({ density: d })
   },
 
-  motion: 'system',
+  motion: 'full',
   setMotion(m) {
     set({ motion: m })
   },

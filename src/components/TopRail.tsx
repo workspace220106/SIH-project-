@@ -2,22 +2,25 @@ import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import { useNexus, type View } from '@/state/store'
 
-const MODULES: Array<{ view: View; label: string; key: string }> = [
+/** All registered system modules kept in codebase for future scope. */
+export const ALL_MODULES: Array<{ view: View; label: string; key: string }> = [
   { view: 'command', label: 'COMMAND', key: '1' },
-  { view: 'graph', label: 'INVESTIGATION', key: '2' },
-  { view: 'alerts', label: 'ALERTS', key: '3' },
-  { view: 'patterns', label: 'PATTERNS', key: '4' },
-  { view: 'intake', label: 'INTAKE', key: '5' },
+  { view: 'graph', label: 'INVESTIGATION', key: '1' },
+  { view: 'alerts', label: 'ALERTS', key: '2' },
+  { view: 'patterns', label: 'PATTERNS', key: '2' },
+  { view: 'intake', label: 'INTAKE', key: '3' },
 ]
 
-/** One row: who we are, where we are, and the two facts that must never be
- *  ambiguous — that the data is synthetic and the host is offline. */
+/** Active modules shown in the navigation bar. */
+const VISIBLE_MODULES = ALL_MODULES.filter(
+  (m) => m.view !== 'command' && m.view !== 'alerts',
+)
+
+/** One row: who we are, where we are, and the synthetic status. */
 export function TopRail() {
   const view = useNexus((s) => s.view)
   const setView = useNexus((s) => s.setView)
   const alerts = useNexus((s) => s.analysis?.alerts ?? [])
-  const stats = useNexus((s) => s.analysis?.dataset.stats)
-  const clock = useClock()
 
   const priority = alerts.filter((a) => a.priority === 'HIGH' || a.priority === 'CRITICAL').length
 
@@ -38,7 +41,7 @@ export function TopRail() {
       </button>
 
       <nav className="flex items-center gap-1.5" aria-label="Modules">
-        {MODULES.map((m) => {
+        {VISIBLE_MODULES.map((m) => {
           const active = view === m.view
           return (
             <button
@@ -70,22 +73,8 @@ export function TopRail() {
         })}
       </nav>
 
-      <div className="flex items-center gap-4 pl-3 font-mono text-3xs uppercase tracking-[0.16em] text-black">
-        <span className="hidden sm:inline font-semibold">Offline</span>
-        <span className="hidden tabular-nums md:inline font-medium">
-          {stats ? stats.records + ' records' : '—'}
-        </span>
-        <span className="tabular-nums font-semibold">{clock}</span>
-      </div>
+      <div className="w-[80px]" />
     </header>
   )
 }
 
-function useClock() {
-  const [now, setNow] = useState(() => new Date())
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), 1000)
-    return () => window.clearInterval(id)
-  }, [])
-  return now.toISOString().slice(11, 19) + 'Z'
-}

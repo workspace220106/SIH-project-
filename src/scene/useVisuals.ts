@@ -24,11 +24,21 @@ export interface KindBuffers {
   alphas: Float32Array
 }
 
+export const CURVE_SEGMENTS = 8
+export const FLOATS_PER_EDGE = CURVE_SEGMENTS * 6
+
+export interface CurveControl {
+  a: [number, number, number]
+  b: [number, number, number]
+  c: [number, number, number]
+}
+
 export interface EdgeBuffers {
   positions: Float32Array
   colors: Float32Array
   ids: string[]
   count: number
+  curves: CurveControl[]
 }
 
 const KINDS: EntityKind[] = ['wallet', 'transaction', 'ip']
@@ -58,17 +68,80 @@ export function useGraphGeometry() {
     })
 
     const edges = analysis.edges
-    const positions = new Float32Array(edges.length * 6)
+    const positions = new Float32Array(edges.length * FLOATS_PER_EDGE)
+    const curves: CurveControl[] = new Array(edges.length)
+
     edges.forEach((e, i) => {
       const a = analysis.index.entityById.get(e.source)
       const b = analysis.index.entityById.get(e.target)
       if (!a || !b) return
-      positions[i * 6] = a.x
-      positions[i * 6 + 1] = a.y
-      positions[i * 6 + 2] = a.z
-      positions[i * 6 + 3] = b.x
-      positions[i * 6 + 4] = b.y
-      positions[i * 6 + 5] = b.z
+
+      const ax = a.x, ay = a.y, az = a.z
+      const bx = b.x, by = b.y, bz = b.z
+      const dx = bx - ax, dy = by - ay, dz = bz - az
+      const len = Math.sqrt(dx * dx + dy * dy + dz * dz)
+
+      // 3D perpendicular vectors for smooth natural curvature
+      let vx = 0, vy = 1, vz = 0
+      if (len > 0.0001 && Math.abs(dy / len) > 0.88) {
+        vx = 1
+        vy = 0
+        vz = 0
+      }
+      const cx = dy * vz - dz * vy
+      const cy = dz * vx - dx * vz
+      const cz = dx * vy - dy * vx
+      const clen = Math.sqrt(cx * cx + cy * cy + cz * cz) || 1
+      const nx = cx / clen, ny = cy / clen, nz = cz / clen
+
+      const bx_perp = len > 0.0001 ? (dy * nz - dz * ny) / len : 0
+      const by_perp = len > 0.0001 ? (dz * nx - dx * nz) / len : 0
+      const bz_perp = len > 0.0001 ? (dx * ny - dy * nx) / len : 0
+
+      const angle = (i * 2.399963) % (Math.PI * 2)
+      const curveMagnitude = Math.min(22, Math.max(3.5, len * 0.16))
+
+      const mx = (ax + bx) * 0.5
+      const my = (ay + by) * 0.5
+      const mz = (az + bz) * 0.5
+
+      const ox = (Math.cos(angle) * nx + Math.sin(angle) * bx_perp) * curveMagnitude
+      const oy = (Math.cos(angle) * ny + Math.sin(angle) * by_perp) * curveMagnitude
+      const oz = (Math.cos(angle) * nz + Math.sin(angle) * bz_perp) * curveMagnitude
+
+      const cpx = mx + ox
+      const cpy = my + oy
+      const cpz = mz + oz
+
+      curves[i] = {
+        a: [ax, ay, az],
+        b: [bx, by, bz],
+        c: [cpx, cpy, cpz],
+      }
+
+      let prevX = ax, prevY = ay, prevZ = az
+      for (let s = 1; s <= CURVE_SEGMENTS; s++) {
+        const t = s / CURVE_SEGMENTS
+        const inv = 1 - t
+        const w0 = inv * inv
+        const w1 = 2 * inv * t
+        const w2 = t * t
+        const currX = w0 * ax + w1 * cpx + w2 * bx
+        const currY = w0 * ay + w1 * cpy + w2 * by
+        const currZ = w0 * az + w1 * cpz + w2 * bz
+
+        const idx = i * FLOATS_PER_EDGE + (s - 1) * 6
+        positions[idx] = prevX
+        positions[idx + 1] = prevY
+        positions[idx + 2] = prevZ
+        positions[idx + 3] = currX
+        positions[idx + 4] = currY
+        positions[idx + 5] = currZ
+
+        prevX = currX
+        prevY = currY
+        prevZ = currZ
+      }
     })
 
     // Flat, entity-order positions — the glow layer draws every node in one pass.
@@ -85,9 +158,10 @@ export function useGraphGeometry() {
       kindMap: new Map(byKind.map((b) => [b.kind, b])),
       edgeBuffers: {
         positions,
-        colors: new Float32Array(edges.length * 6),
+        colors: new Float32Array(edges.length * FLOATS_PER_EDGE),
         ids: edges.map((e) => e.id),
         count: edges.length,
+        curves,
       } as EdgeBuffers,
     }
   }, [analysis])
@@ -256,7 +330,7 @@ export function useVisualTargets(reveal = 1, revealCluster: number | null = null
     // --- edges -------------------------------------------------------------
     const ec = geometry.edgeBuffers.count
     const edgeAlpha = new Float32Array(ec)
-    const edgeColor = new Float32Array(ec * 6)
+    const edgeColor = new Float32Array(ec * FLOATS_PER_EDGE)
 
     for (let i = 0; i < ec; i++) {
       const edge = analysis.edges[i]
@@ -302,10 +376,13 @@ export function useVisualTargets(reveal = 1, revealCluster: number | null = null
       }
 
       fade(out, scratch, a)
-      for (let v = 0; v < 2; v++) {
-        edgeColor[i * 6 + v * 3] = out.r
-        edgeColor[i * 6 + v * 3 + 1] = out.g
-        edgeColor[i * 6 + v * 3 + 2] = out.b
+
+      const baseIdx = i * FLOATS_PER_EDGE
+      const vertexCount = CURVE_SEGMENTS * 2
+      for (let v = 0; v < vertexCount; v++) {
+        edgeColor[baseIdx + v * 3] = out.r
+        edgeColor[baseIdx + v * 3 + 1] = out.g
+        edgeColor[baseIdx + v * 3 + 2] = out.b
       }
       edgeAlpha[i] = a
     }

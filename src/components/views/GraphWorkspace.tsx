@@ -10,12 +10,16 @@ import { LeadPanel } from '@/components/panels/LeadPanel'
 import { Timeline } from '@/components/panels/Timeline'
 import { PATTERN_DEFS } from '@/lib/patterns'
 
-const TABS: Array<{ id: PanelMode; label: string }> = [
+/** All registered panel modes preserved in codebase for future scope. */
+export const ALL_PANEL_TABS: Array<{ id: PanelMode; label: string }> = [
   { id: 'intel', label: 'OVERVIEW' },
   { id: 'why', label: 'WHY' },
   { id: 'trace', label: 'TRACE' },
   { id: 'replay', label: 'REPLAY' },
 ]
+
+/** Visible tabs shown in the right panel header. */
+const TABS = ALL_PANEL_TABS.filter((t) => t.id !== 'trace' && t.id !== 'replay')
 
 /**
  * The workspace is the field. Panels open in response to an action — selecting

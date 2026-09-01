@@ -4,7 +4,6 @@ import { useNexus } from '@/state/store'
 import { useHotkeys } from '@/hooks/useHotkeys'
 import { Boot } from '@/components/Boot'
 import { TopRail } from '@/components/TopRail'
-import { StatusBar } from '@/components/StatusBar'
 import { GraphCanvas } from '@/scene/GraphCanvas'
 import { GraphScene } from '@/scene/GraphScene'
 import { useReplayDriver } from '@/hooks/useReplayDriver'
@@ -60,7 +59,6 @@ export default function App() {
         </div>
         <TransitionNote />
       </main>
-      <StatusBar />
     </div>
   )
 }

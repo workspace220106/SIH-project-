@@ -68,13 +68,18 @@ export function FlowParticles({ buffers, targets, still }: Props) {
     const step = still ? 0 : delta * 0.34
     for (let i = 0; i < count; i++) {
       phases[i] = (phases[i] + step) % 1
-      const e = active[i] * 6
+      const edgeIdx = active[i]
+      const curve = buffers.curves?.[edgeIdx]
       const t = phases[i]
-      arr[i * 3] = buffers.positions[e] + (buffers.positions[e + 3] - buffers.positions[e]) * t
-      arr[i * 3 + 1] =
-        buffers.positions[e + 1] + (buffers.positions[e + 4] - buffers.positions[e + 1]) * t
-      arr[i * 3 + 2] =
-        buffers.positions[e + 2] + (buffers.positions[e + 5] - buffers.positions[e + 2]) * t
+      if (curve) {
+        const inv = 1 - t
+        const w0 = inv * inv
+        const w1 = 2 * inv * t
+        const w2 = t * t
+        arr[i * 3] = w0 * curve.a[0] + w1 * curve.c[0] + w2 * curve.b[0]
+        arr[i * 3 + 1] = w0 * curve.a[1] + w1 * curve.c[1] + w2 * curve.b[1]
+        arr[i * 3 + 2] = w0 * curve.a[2] + w1 * curve.c[2] + w2 * curve.b[2]
+      }
     }
     attr.needsUpdate = true
   })

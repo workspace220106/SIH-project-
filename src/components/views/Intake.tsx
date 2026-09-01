@@ -1,10 +1,8 @@
 import { useRef, useState } from 'react'
 import clsx from 'clsx'
-import { motion } from 'framer-motion'
 import { useNexus } from '@/state/store'
 import { INGEST_STAGES } from '@/lib/api'
-import { fmtDateTime } from '@/lib/graph'
-import { Field, Label } from '@/components/ui'
+import { Label } from '@/components/ui'
 
 const SCHEMA: Array<[string, string, string]> = [
   ['txid', 'string', 'txid · tx_id · hash · transaction_id'],
@@ -19,11 +17,7 @@ const SCHEMA: Array<[string, string, string]> = [
 export function Intake() {
   const ingest = useNexus((s) => s.ingest)
   const ingestFile = useNexus((s) => s.ingestFile)
-  const restore = useNexus((s) => s.restoreSynthetic)
   const clearError = useNexus((s) => s.clearIngestError)
-  const stats = useNexus((s) => s.analysis?.dataset.stats)
-  const notes = useNexus((s) => s.analysis?.dataset.notes ?? [])
-  const setView = useNexus((s) => s.setView)
   const [dragging, setDragging] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -34,7 +28,7 @@ export function Intake() {
 
   return (
     <div className="absolute inset-0 overflow-y-auto bg-void">
-      <div className="mx-auto grid max-w-[1180px] grid-cols-1 gap-6 px-6 py-7 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="mx-auto max-w-[860px] px-6 py-7">
         {/* Drop + pipeline */}
         <div>
           <h1 className="display text-[16px] tracking-[0.16em] text-ink">DATA INTAKE</h1>
@@ -207,88 +201,6 @@ export function Intake() {
             </p>
           </section>
         </div>
-
-        {/* Current dataset */}
-        <aside className="lg:sticky lg:top-6 lg:self-start">
-          <div className="panel-solid regmark rounded-2xl overflow-hidden shadow-md">
-            <div className="flex items-baseline justify-between border-b border-line px-4 py-2.5">
-              <span className="display text-[11px] tracking-[0.16em] text-ink">LOADED CAPTURE</span>
-              <span
-                className={clsx(
-                  'chip',
-                  stats?.source === 'SYNTHETIC'
-                    ? 'border-accent/50 text-accent'
-                    : 'border-line-strong text-muted',
-                )}
-              >
-                {stats?.source ?? '—'}
-              </span>
-            </div>
-            {stats && (
-              <div className="px-4 py-3">
-                <Field k="NAME" v={stats.name} />
-                <Field k="FORMAT" v={stats.format} />
-                <Field k="RECORDS" v={stats.records.toLocaleString()} tone="accent" />
-                <Field k="FIELDS" v={String(stats.fields)} />
-                <Field k="DUPLICATES" v={String(stats.duplicates)} />
-                <Field k="INVALID ROWS" v={String(stats.invalidRows)} />
-                <div className="my-2 h-px bg-line" />
-                <Field k="WALLETS" v={stats.wallets.toLocaleString()} />
-                <Field k="TRANSACTIONS" v={stats.transactions.toLocaleString()} />
-                <Field k="HOSTS" v={stats.ips.toLocaleString()} />
-                <div className="my-2 h-px bg-line" />
-                <Field k="FROM" v={fmtDateTime(stats.rangeStart)} mono />
-                <Field k="TO" v={fmtDateTime(stats.rangeEnd)} mono />
-              </div>
-            )}
-
-            {notes.length > 0 && (
-              <div className="border-t border-line px-4 py-3">
-                <Label>Reconstruction notes</Label>
-                {notes.map((n) => (
-                  <p key={n} className="mt-1.5 text-[11.5px] leading-relaxed text-muted">
-                    {n}
-                  </p>
-                ))}
-              </div>
-            )}
-
-            <div className="space-y-1 border-t border-line p-3">
-              <button
-                type="button"
-                className="btn btn-primary h-[32px] w-full justify-center"
-                onClick={() => setView('command', 'Returning to command overview')}
-              >
-                Open command overview
-              </button>
-              <button
-                type="button"
-                className="btn w-full justify-center"
-                onClick={() => void restore()}
-                disabled={stats?.source === 'SYNTHETIC'}
-              >
-                Restore synthetic capture
-              </button>
-            </div>
-          </div>
-
-          {ingest.busy && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="mt-3 border border-accent/40 px-4 py-2.5"
-            >
-              <span className="font-mono text-2xs uppercase tracking-[0.14em] text-accent">
-                Processing {ingest.filename}
-              </span>
-            </motion.div>
-          )}
-
-          <p className="mt-4 px-1 font-mono text-3xs uppercase leading-relaxed tracking-[0.14em] text-ghost">
-            Synthetic data · offline environment. Nothing on this workstation reaches an external
-            network.
-          </p>
-        </aside>
       </div>
     </div>
   )

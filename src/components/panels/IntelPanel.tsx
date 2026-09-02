@@ -220,8 +220,10 @@ function Attributes({ entity }: { entity: Entity }) {
   // available, but they are not the default state of the panel.
   const PRIMARY: Record<string, string[]> = {
     wallet: ['transactions', 'received', 'sent', 'degreeIn', 'degreeOut'],
-    transaction: ['amount', 'fee', 'source', 'destination', 'ip'],
-    ip: ['address', 'port', 'observations', 'wallets'],
+    // The network-layer fields are what make a transaction correlatable, so
+    // they belong in the default view rather than behind the disclosure.
+    transaction: ['amount', 'fee', 'inputs', 'outputs', 'srcIp', 'country'],
+    ip: ['address', 'port', 'country', 'asn', 'observations', 'wallets'],
   }
   const primary = PRIMARY[entity.kind] ?? []
   const entries = Object.entries(entity.meta)

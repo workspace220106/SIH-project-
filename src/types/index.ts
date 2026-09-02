@@ -16,29 +16,52 @@ export type PatternId =
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
 export type Confidence = 'LOW' | 'MODERATE' | 'HIGH'
 
-/** Raw record shape accepted by the ingestion pipeline (CSV / JSON / XML). */
+/**
+ * One row of a capture, matching the problem statement's minimum field set.
+ *
+ * A row is a whole transaction: the address and amount arrays carry every
+ * input and output side, so fan-in, fan-out and peeling are read directly off
+ * the record instead of being reconstructed from repeated rows.
+ */
 export interface RawRecord {
+  timestamp: string
   txid: string
+  srcIp: string
+  dstIp: string
+  srcPort: number
+  dstPort: number
+  inputAddresses: string[]
+  outputAddresses: string[]
+  inputAmounts: number[]
+  outputAmounts: number[]
+  fee: number
+  /** Output script type, e.g. P2WPKH. Optional — not every capture carries it. */
+  scriptType?: string
+  /** ISO 3166-1 alpha-2, from the capture or resolved from the GeoIP database. */
+  geoCountry?: string
+  asn?: string
+}
+
+/** One side of a transaction: an address and the value it contributed or received. */
+export interface TxParty {
   wallet: string
   amount: number
-  fee: number
-  ip: string
-  port: number
-  timestamp: string
 }
 
 export interface Transaction {
   id: string
   txid: string
   timestamp: number
+  inputs: TxParty[]
+  outputs: TxParty[]
+  /** Total value moved — the sum of the outputs. */
   amount: number
   fee: number
-  inputs: number
-  outputs: number
-  sourceWallet: string
-  destinationWallet: string
-  observedIp: string
-  port: number
+  srcIp: string
+  dstIp: string
+  srcPort: number
+  dstPort: number
+  scriptType: string
   /** Hop index within a traced peeling chain, when applicable. */
   hop?: number
 }
@@ -62,6 +85,9 @@ export interface IPObservation {
   id: string
   address: string
   port: number
+  /** ISO 3166-1 alpha-2, or 'ZZ' when the GeoIP database has no entry. */
+  country: string
+  asn: string
   firstSeen: number
   lastSeen: number
   observationCount: number
@@ -166,6 +192,8 @@ export interface Alert {
   priority: Priority
   risk: number
   pattern: PatternId
+  /** Country of the host that broadcast most of this wallet's traffic. */
+  country: string
   timestamp: number
   confidence: number
   acknowledged: boolean

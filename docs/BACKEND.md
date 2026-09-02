@@ -36,9 +36,9 @@ The whole analysis in one response. For a capture of this size the payload is
 ```jsonc
 {
   "stats":    { "name": "...", "source": "IMPORTED", "format": "CSV",
-                "records": 164, "fields": 7, "duplicates": 0, "invalidRows": 3,
+                "records": 156, "fields": 14, "duplicates": 0, "invalidRows": 3,
                 "rangeStart": 1787994952428, "rangeEnd": 1788011993930,
-                "wallets": 79, "transactions": 164, "ips": 18 },
+                "wallets": 78, "transactions": 156, "ips": 17 },
   "notes":    ["..."],                      // reconstruction caveats, shown verbatim
   "entities": [ /* see below */ ],
   "edges":    [ /* see below */ ],
@@ -104,14 +104,37 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 STATE = {"analysis": None}
 
 ALIASES = {
-    "txid": ["txid", "tx_id", "hash", "transaction_id"],
-    "wallet": ["wallet", "address", "addr"],
-    "amount": ["amount", "value", "btc"],
-    "fee": ["fee", "txfee"],
-    "ip": ["ip", "ip_address", "src_ip"],
-    "port": ["port", "src_port"],
-    "timestamp": ["timestamp", "time", "ts", "datetime"],
+    "timestamp":        ["timestamp", "time", "ts", "datetime"],
+    "txid":             ["txid", "tx_id", "hash", "transaction_id"],
+    "src_ip":           ["src_ip", "source_ip", "ip"],
+    "dst_ip":           ["dst_ip", "dest_ip", "peer_ip"],
+    "src_port":         ["src_port", "source_port", "port"],
+    "dst_port":         ["dst_port", "dest_port", "peer_port"],
+    "input_addresses":  ["input_addresses", "inputs", "in_addresses"],
+    "output_addresses": ["output_addresses", "outputs", "out_addresses"],
+    "input_amounts":    ["input_amounts", "input_values"],
+    "output_amounts":   ["output_amounts", "output_values"],
+    "fee":              ["fee", "txfee"],
+    "script_type":      ["script_type", "script"],
+    "geo_country":      ["geo_country", "country", "country_code"],
+    "asn":              ["asn", "as_number"],
 }
+
+ARRAY_FIELDS = ["input_addresses", "output_addresses", "input_amounts", "output_amounts"]
+
+def parse_array(cell):
+    """A JSON array, or a pipe/semicolon list inside one CSV cell."""
+    if isinstance(cell, list):
+        return [str(v).strip() for v in cell if str(v).strip()]
+    text = str(cell or "").strip()
+    if not text:
+        return []
+    if text.startswith("["):
+        try:
+            return [str(v).strip() for v in json.loads(text.replace("'", '"'))]
+        except ValueError:
+            pass
+    return [p.strip().strip("\"'") for p in re.split(r"[|;]", text.strip("[]")) if p.strip()]
 
 def normalise(df: pd.DataFrame) -> pd.DataFrame:
     rename = {}
@@ -121,22 +144,51 @@ def normalise(df: pd.DataFrame) -> pd.DataFrame:
                 rename[c] = canon
     df = df.rename(columns=rename)
     df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce", utc=True)
-    df["amount"] = pd.to_numeric(df["amount"], errors="coerce")
-    invalid = df["timestamp"].isna() | df["amount"].isna() | df["txid"].isna()
-    return df[~invalid].drop_duplicates(subset=["txid", "wallet", "timestamp"])
+    for col in ARRAY_FIELDS:
+        df[col] = df[col].apply(parse_array) if col in df else [[] for _ in range(len(df))]
+    invalid = df["timestamp"].isna() | df["txid"].isna()
+    # Value cannot be attributed to an address when the arrays disagree.
+    invalid |= df.apply(
+        lambda r: (len(r.input_amounts) and len(r.input_amounts) != len(r.input_addresses))
+        or (len(r.output_amounts) and len(r.output_amounts) != len(r.output_addresses)),
+        axis=1,
+    )
+    return df[~invalid].drop_duplicates(subset=["txid"])
 
 def build_transactions(df: pd.DataFrame) -> list[dict]:
-    """Rows sharing a txid are one transaction: earliest row is the input side."""
+    """One row is one transaction. Both sides come straight off the arrays."""
     out = []
-    for txid, rows in df.sort_values("timestamp").groupby("txid", sort=False):
-        rows = rows.reset_index(drop=True)
-        src = rows.loc[0]
-        for _, dst in rows.iloc[1:].iterrows():
-            out.append({"txid": txid, "source": src.wallet, "destination": dst.wallet,
-                        "amount": float(dst.amount), "fee": float(src.fee or 0),
-                        "ip": src.ip, "port": int(src.port or 8333),
-                        "timestamp": int(src.timestamp.timestamp() * 1000)})
+    for _, r in df.sort_values("timestamp").iterrows():
+        sides = lambda addrs, amts: [
+            {"wallet": a, "amount": float(amts[i]) if i < len(amts) else 0.0}
+            for i, a in enumerate(addrs)
+        ]
+        outputs = sides(r.output_addresses, r.output_amounts)
+        out.append({
+            "txid": r.txid,
+            "inputs": sides(r.input_addresses, r.input_amounts),
+            "outputs": outputs,
+            "amount": sum(o["amount"] for o in outputs),
+            "fee": float(r.get("fee") or 0),
+            "src_ip": r.get("src_ip"), "dst_ip": r.get("dst_ip"),
+            "src_port": int(r.get("src_port") or 8333),
+            "dst_port": int(r.get("dst_port") or 8333),
+            "script_type": r.get("script_type") or "UNKNOWN",
+            "country": r.get("geo_country") or geoip_country(r.get("src_ip")),
+            "asn": r.get("asn") or "AS0",
+            "timestamp": int(r.timestamp.timestamp() * 1000),
+        })
     return out
+
+# GeoIP: geoip2 reads the GeoLite2 .mmdb straight off disk, no network.
+#   pip install geoip2 ; download GeoLite2-Country.mmdb from MaxMind
+_geo = geoip2.database.Reader("GeoLite2-Country.mmdb")
+
+def geoip_country(ip: str) -> str:
+    try:
+        return _geo.country(ip).country.iso_code or "ZZ"
+    except Exception:
+        return "ZZ"
 
 def detect(G: nx.DiGraph, tx: list[dict]) -> list[dict]:
     hits, WINDOW = [], 15 * 60 * 1000

@@ -107,15 +107,33 @@ override.
 
 ## Importing a capture
 
-Intake accepts CSV, TSV, JSON and XML. Column names are matched against a set of aliases
-(`txid | tx_id | hash | transaction_id`, `wallet | address | addr`, and so on), timestamps are
-accepted as ISO 8601 or epoch seconds/milliseconds. A host is an address and a port — there is
-no GeoIP or ASN enrichment, because that is a separate data source.
+Intake accepts CSV, TSV, JSON and XML in the problem statement's field format:
 
-**Rows sharing a txid are one transaction**: the earliest row is the input side, the rest are
-outputs. Where every txid appears exactly once the direction of value cannot be recovered — the
-detectors that depend on direction are skipped and the intake panel says so, rather than the
-system guessing.
+| Field | Notes |
+| --- | --- |
+| `timestamp` | ISO 8601 or epoch seconds/milliseconds |
+| `txid` | |
+| `src_ip`, `dst_ip` | the broadcasting host and the peer it relayed to |
+| `src_port`, `dst_port` | |
+| `input_addresses[]`, `output_addresses[]` | JSON array, or a pipe-separated list in one cell |
+| `input_amounts[]`, `output_amounts[]` | must match their address array in length |
+| `fee` | |
+| `script_type` | optional |
+| `geo_country`, `asn` | optional — resolved from the GeoIP database when absent |
+
+Column names are matched against a set of aliases (`txid | tx_id | hash`, `src_ip | source_ip | ip`,
+and so on). **One row is one transaction** — the arrays carry both sides, so fan-in, fan-out and
+peeling are read off the record rather than inferred from row ordering. A row whose address and
+amount arrays differ in length is rejected rather than guessed at, because value could not be
+attributed to an address.
+
+### GeoIP
+
+`geo_country` and `asn` are used directly when the capture carries them. When it does not, addresses
+are resolved against a local database — build `public/geoip/ipv4-country.json` from a MaxMind
+GeoLite2 Country CSV export with `scripts/build-geoip.ts`. The lookup is a binary search over
+sorted ranges and never touches the network; the intake screen states whether a database is
+installed. Unresolved addresses show as `ZZ` rather than being guessed.
 
 Sample captures are in `public/samples/` and linked from the intake screen.
 
@@ -165,8 +183,8 @@ Near-black ground, charcoal surfaces, hairline rules, one restrained accent. War
 strong glow are reserved for two things: the current selection, and risk above the floor at 68.
 Below that the field stays cool and quiet, so emphasis means something when it appears.
 
-Type: Archivo for the wordmark and numeric readouts, IBM Plex Sans for prose, IBM Plex Mono for
-every identifier, timestamp and measurement.
+Fonts are bundled through `@fontsource`, not fetched from a CDN. The workstation claims to be
+offline on every screen, so it has to render correctly on a host with no route out.
 
 ---
 

@@ -4,6 +4,7 @@ import type {
   Detection,
   IPObservation,
   Transaction,
+  TxParty,
   Wallet,
 } from '@/types'
 import { bech32Tail, between, gauss, hex, intBetween, mulberry32, pick, type Rand } from '@/lib/rng'
@@ -23,6 +24,14 @@ const MIN = 60_000
 export type PlantedPattern = Detection
 
 export type { Dataset }
+
+/** Registry-plausible values for the synthetic capture. Real codes, invented
+ *  traffic — the dataset is labelled synthetic everywhere it is surfaced. */
+const COUNTRIES = ['IN', 'RU', 'NL', 'US', 'SG', 'DE', 'CN', 'AE', 'UA', 'SE']
+const ASNS = [
+  'AS9498', 'AS55836', 'AS4837', 'AS13335', 'AS16509',
+  'AS24940', 'AS45609', 'AS14061', 'AS20473', 'AS51167',
+]
 
 const CLUSTER_LABELS = [
   'SETTLEMENT RING',
@@ -51,27 +60,33 @@ function makeWallet(r: Rand, index: number, cluster: number): Wallet {
 
 let txCounter = 0
 
+const SCRIPT_TYPES = ['P2WPKH', 'P2WPKH', 'P2WPKH', 'P2PKH', 'P2SH', 'P2TR']
+
 function makeTx(
   r: Rand,
-  source: Wallet,
-  dest: Wallet,
+  inputs: TxParty[],
+  outputs: TxParty[],
   timestamp: number,
-  amount: number,
-  ip: IPObservation,
+  srcIp: IPObservation,
+  dstIp: IPObservation,
   extra: Partial<Transaction> = {},
 ): Transaction {
+  const clean = (parties: TxParty[]): TxParty[] =>
+    parties.map((p) => ({ wallet: p.wallet, amount: Math.max(0.0004, Number(p.amount.toFixed(8))) }))
+  const outs = clean(outputs)
   return {
     id: 't' + (txCounter++).toString().padStart(4, '0'),
     txid: hex(r, 64),
     timestamp: Math.round(timestamp),
-    amount: Math.max(0.0004, Number(amount.toFixed(8))),
+    inputs: clean(inputs),
+    outputs: outs,
+    amount: Number(outs.reduce((a, o) => a + o.amount, 0).toFixed(8)),
     fee: Number(between(r, 0.000042, 0.00068).toFixed(8)),
-    inputs: intBetween(r, 1, 4),
-    outputs: intBetween(r, 1, 3),
-    sourceWallet: source.id,
-    destinationWallet: dest.id,
-    observedIp: ip.address,
-    port: ip.port,
+    srcIp: srcIp.address,
+    dstIp: dstIp.address,
+    srcPort: srcIp.port,
+    dstPort: dstIp.port,
+    scriptType: pick(r, SCRIPT_TYPES),
     ...extra,
   }
 }
@@ -92,6 +107,8 @@ export function generateDataset(seed = 26146): Dataset {
         intBetween(r, 1, 254),
       ].join('.'),
       port: pick(r, [8333, 8333, 8333, 8332, 18333, 9050, 9051, 443, 51413]),
+      country: pick(r, COUNTRIES),
+      asn: pick(r, ASNS),
       firstSeen: 0,
       lastSeen: 0,
       observationCount: 0,
@@ -124,8 +141,30 @@ export function generateDataset(seed = 26146): Dataset {
     return ip
   }
 
-  const emit = (s: Wallet, d: Wallet, t: number, amt: number, extra?: Partial<Transaction>) => {
-    const tx = makeTx(r, s, d, t, amt, ipFor(s), extra)
+  /**
+   * One transfer. `extraOutputs` lets a caller add a change or peel output, so
+   * a peeling hop is a single two-output transaction rather than two rows.
+   */
+  const emit = (
+    s: Wallet,
+    d: Wallet,
+    t: number,
+    amt: number,
+    extraOutputs: TxParty[] = [],
+    extra?: Partial<Transaction>,
+  ) => {
+    const outputs = [{ wallet: d.id, amount: amt }, ...extraOutputs]
+    const total = outputs.reduce((a, o) => a + o.amount, 0)
+    const srcHost = ipFor(s)
+    // The relay peer is a different host: src and dst collapsing to one
+    // address would make the network layer useless for correlation.
+    let dstHost = ipFor(d)
+    if (dstHost.address === srcHost.address) {
+      dstHost = ips.find((h) => h.address !== srcHost.address) ?? dstHost
+      const alternatives = ips.filter((h) => h.address !== srcHost.address)
+      if (alternatives.length) dstHost = pick(r, alternatives)
+    }
+    const tx = makeTx(r, [{ wallet: s.id, amount: total }], outputs, t, srcHost, dstHost, extra)
     transactions.push(tx)
     return tx
   }
@@ -189,13 +228,18 @@ export function generateDataset(seed = 26146): Dataset {
   for (let i = 0; i < chain.length - 1; i++) {
     const shed = carried * between(r, 0.16, 0.31)
     carried = carried - shed
+    // One transaction, two outputs: the remainder walks on and a small slice
+    // peels off toward the periphery. That shape is what the detector reads.
     peelTx.push(
-      emit(chain[i], chain[i + 1], peelStart + i * between(r, 150_000, 320_000), carried, {
-        hop: i + 1,
-      }),
+      emit(
+        chain[i],
+        chain[i + 1],
+        peelStart + i * between(r, 150_000, 320_000),
+        carried,
+        [{ wallet: pick(r, byCluster(5)).id, amount: shed }],
+        { hop: i + 1 },
+      ),
     )
-    // The peeled remainder leaves toward the periphery — the classic tell.
-    peelTx.push(emit(chain[i], pick(r, byCluster(5)), peelStart + i * 160_000 + 42_000, shed))
   }
   planted.push({
     id: 'PEELING',
@@ -228,7 +272,7 @@ export function generateDataset(seed = 26146): Dataset {
   for (let i = 0; i < relay.length - 1; i++) {
     relayT += between(r, 26_000, 84_000)
     relayAmt *= between(r, 0.93, 0.985)
-    rapidTx.push(emit(relay[i], relay[i + 1], relayT, relayAmt, { hop: i + 1 }))
+    rapidTx.push(emit(relay[i], relay[i + 1], relayT, relayAmt, [], { hop: i + 1 }))
   }
   planted.push({
     id: 'BURST_ACTIVITY',
@@ -270,24 +314,35 @@ export function generateDataset(seed = 26146): Dataset {
   const walletById = new Map(wallets.map((w) => [w.id, w]))
   const ipByAddress = new Map(ips.map((i) => [i.address, i]))
   for (const tx of transactions) {
-    const s = walletById.get(tx.sourceWallet)!
-    const d = walletById.get(tx.destinationWallet)!
-    s.txCount++
-    d.txCount++
-    s.totalOut += tx.amount
-    d.totalIn += tx.amount
-    s.degreeOut++
-    d.degreeIn++
-    for (const w of [s, d]) {
+    const touched = new Set<Wallet>()
+    for (const side of tx.inputs) {
+      const w = walletById.get(side.wallet)
+      if (!w) continue
+      w.totalOut += side.amount
+      w.degreeOut++
+      touched.add(w)
+    }
+    for (const side of tx.outputs) {
+      const w = walletById.get(side.wallet)
+      if (!w) continue
+      w.totalIn += side.amount
+      w.degreeIn++
+      touched.add(w)
+    }
+    for (const w of touched) {
+      w.txCount++
       w.firstSeen = w.firstSeen === 0 ? tx.timestamp : Math.min(w.firstSeen, tx.timestamp)
       w.lastSeen = Math.max(w.lastSeen, tx.timestamp)
     }
-    const ip = ipByAddress.get(tx.observedIp)
+    // The broadcasting host is the one that carries the correlation weight.
+    const ip = ipByAddress.get(tx.srcIp)
     if (ip) {
       ip.observationCount++
       ip.firstSeen = ip.firstSeen === 0 ? tx.timestamp : Math.min(ip.firstSeen, tx.timestamp)
       ip.lastSeen = Math.max(ip.lastSeen, tx.timestamp)
-      if (!ip.linkedWallets.includes(s.id)) ip.linkedWallets.push(s.id)
+      for (const side of tx.inputs) {
+        if (!ip.linkedWallets.includes(side.wallet)) ip.linkedWallets.push(side.wallet)
+      }
     }
   }
 
@@ -299,7 +354,7 @@ export function generateDataset(seed = 26146): Dataset {
     source: 'SYNTHETIC',
     format: 'GENERATED',
     records: transactions.length,
-    fields: 7,
+    fields: 14,
     duplicates: 0,
     invalidRows: 0,
     rangeStart: transactions[0].timestamp,

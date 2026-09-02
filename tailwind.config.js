@@ -27,7 +27,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Public Sans', 'system-ui', 'sans-serif'],
+        sans: ['Public Sans Variable', 'Public Sans', 'system-ui', 'sans-serif'],
         display: ['Caudex', 'serif'],
         serif: ['Caudex', 'serif'],
         secondary: ['Caudex', 'serif'],

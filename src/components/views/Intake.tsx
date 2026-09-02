@@ -2,16 +2,24 @@ import { useRef, useState } from 'react'
 import clsx from 'clsx'
 import { useNexus } from '@/state/store'
 import { INGEST_STAGES } from '@/lib/api'
+import { geoDatabaseStatus } from '@/lib/geoip'
 import { Label } from '@/components/ui'
 
 const SCHEMA: Array<[string, string, string]> = [
-  ['txid', 'string', 'txid · tx_id · hash · transaction_id'],
-  ['wallet', 'string', 'wallet · address · addr · account'],
-  ['amount', 'number', 'amount · value · btc'],
-  ['fee', 'number', 'fee · txfee · miner_fee'],
-  ['ip', 'string', 'ip · ip_address · src_ip · host'],
-  ['port', 'number', 'port · src_port · dst_port'],
   ['timestamp', 'ISO 8601 or epoch', 'timestamp · time · ts · datetime'],
+  ['txid', 'string', 'txid · tx_id · hash · transaction_id'],
+  ['src_ip', 'IPv4', 'src_ip · source_ip · ip'],
+  ['dst_ip', 'IPv4', 'dst_ip · dest_ip · peer_ip'],
+  ['src_port', 'number', 'src_port · source_port · port'],
+  ['dst_port', 'number', 'dst_port · dest_port · peer_port'],
+  ['input_addresses[]', 'array', 'input_addresses · inputs · in_addresses'],
+  ['output_addresses[]', 'array', 'output_addresses · outputs · out_addresses'],
+  ['input_amounts[]', 'array', 'input_amounts · input_values'],
+  ['output_amounts[]', 'array', 'output_amounts · output_values'],
+  ['fee', 'number', 'fee · txfee · miner_fee'],
+  ['script_type', 'string (optional)', 'script_type · script'],
+  ['geo_country', 'ISO 3166-1 (optional)', 'geo_country · country · country_code'],
+  ['asn', 'string (optional)', 'asn · as_number'],
 ]
 
 export function Intake() {
@@ -195,13 +203,49 @@ export function Intake() {
               </tbody>
             </table>
             <p className="mt-3 max-w-[620px] text-[11.5px] leading-relaxed text-faint">
-              Rows sharing a txid are treated as one transaction: the earliest is the input side,
-              the rest are outputs. Where a txid appears only once the direction of value cannot be
-              recovered, and the detectors that depend on it are skipped rather than guessed at.
+              One row is one transaction. Array columns accept a JSON array or a pipe-separated
+              list inside a single cell (<span className="font-mono">addr1|addr2</span>); XML may
+              repeat child elements instead. A row whose address and amount arrays differ in length
+              is rejected rather than guessed at, because value could not be attributed to an
+              address. Country and ASN are read from the capture when present, otherwise resolved
+              from the local GeoIP database.
             </p>
+          </section>
+
+          {/* GeoIP */}
+          <section className="mt-7">
+            <Label>GeoIP database</Label>
+            <GeoStatus />
           </section>
         </div>
       </div>
+    </div>
+  )
+}
+
+/** Says plainly whether a local database is installed, and what happens if not. */
+function GeoStatus() {
+  const geo = geoDatabaseStatus()
+  return (
+    <div className="mt-3 max-w-[620px] rounded-2xl border border-line bg-surface/80 px-4 py-3 shadow-sm">
+      <div className="flex items-baseline gap-2">
+        <span
+          className={clsx('h-[6px] w-[6px] rounded-full', geo.loaded ? 'bg-accent' : 'bg-line-strong')}
+        />
+        <span className="font-mono text-2xs uppercase tracking-[0.14em] text-ink">
+          {geo.loaded ? geo.label : 'Not installed'}
+        </span>
+        {geo.loaded && (
+          <span className="ml-auto font-mono text-3xs tabular-nums text-muted">
+            {geo.entries.toLocaleString()} ranges
+          </span>
+        )}
+      </div>
+      <p className="mt-2 text-[11.5px] leading-relaxed text-faint">
+        {geo.loaded
+          ? 'Addresses without a country in the capture are resolved locally against this database. No lookup leaves this host.'
+          : 'Countries are read from the capture’s geo_country column. To resolve addresses that lack one, build public/geoip/ipv4-country.json from a MaxMind GeoLite2 export using scripts/build-geoip.ts — the lookup then runs entirely offline.'}
+      </p>
     </div>
   )
 }

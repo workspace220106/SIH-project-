@@ -21,12 +21,9 @@ export function ReplayPanel() {
 
   const current = replay.cursor > 0 ? track[Math.min(replay.cursor, track.length) - 1] : null
   const pct = track.length ? (replay.cursor / track.length) * 100 : 0
-  const sourceLabel = current
-    ? analysis?.index.walletById.get(current.sourceWallet)?.address ?? current.sourceWallet
-    : ''
-  const destLabel = current
-    ? analysis?.index.walletById.get(current.destinationWallet)?.address ?? current.destinationWallet
-    : ''
+  const label = (id: string) => shortAddr(analysis?.index.walletById.get(id)?.address ?? id)
+  const sourceLabel = current ? current.inputs.map((s) => label(s.wallet)).join(' · ') : ''
+  const destLabel = current ? current.outputs.map((s) => label(s.wallet)).join(' · ') : ''
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -124,9 +121,11 @@ export function ReplayPanel() {
               <Field k="TXID" v={shortTxid(current.txid)} />
               <Field k="AMOUNT" v={fmtBtc(current.amount) + ' BTC'} tone="accent" />
               <Field k="FEE" v={fmtBtc(current.fee, 8)} tone="muted" />
-              <Field k="SOURCE" v={shortAddr(sourceLabel)} />
-              <Field k="DESTINATION" v={shortAddr(destLabel)} />
-              <Field k="HOST" v={current.observedIp + ':' + current.port} tone="muted" />
+              <Field k="INPUTS" v={sourceLabel} />
+              <Field k="OUTPUTS" v={destLabel} />
+              <Field k="SOURCE HOST" v={current.srcIp + ':' + current.srcPort} tone="muted" />
+              <Field k="DEST HOST" v={current.dstIp + ':' + current.dstPort} tone="muted" />
+              <Field k="SCRIPT" v={current.scriptType} tone="muted" />
             </div>
             <button
               type="button"

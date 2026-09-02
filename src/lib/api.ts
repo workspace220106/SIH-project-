@@ -49,9 +49,9 @@ export interface IngestStage {
 
 export const INGEST_STAGES: IngestStage[] = [
   { key: 'UPLOAD', label: 'UPLOAD', detail: 'Read into local buffer. Nothing leaves this host.' },
-  { key: 'VALIDATE', label: 'VALIDATE', detail: 'Schema check across txid, wallet, amount, fee, ip, port, timestamp.' },
-  { key: 'CLEAN', label: 'CLEAN', detail: 'Drop malformed rows, resolve duplicate txids, coerce numerics.' },
-  { key: 'NORMALIZE', label: 'NORMALIZE', detail: 'Unify timestamps to UTC, amounts to BTC, addresses to canonical form.' },
+  { key: 'VALIDATE', label: 'VALIDATE', detail: 'Schema check across timestamp, txid, src/dst ip and port, input and output address and amount arrays, fee.' },
+  { key: 'CLEAN', label: 'CLEAN', detail: 'Drop malformed rows, reject arrays whose lengths disagree, resolve duplicate txids.' },
+  { key: 'NORMALIZE', label: 'NORMALIZE', detail: 'Unify timestamps to UTC, amounts to BTC, resolve country and ASN for each host.' },
   { key: 'CORRELATE', label: 'CORRELATE', detail: 'Join IP ↔ TXID ↔ time into the temporal entity graph.' },
   { key: 'READY', label: 'READY', detail: 'Feature extraction complete. Detectors armed.' },
 ]

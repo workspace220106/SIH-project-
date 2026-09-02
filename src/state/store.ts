@@ -12,6 +12,7 @@ import type {
 import { assemble, neighbourhood, tracePath, type Analysis } from '@/lib/graph'
 import { datasetFromRecords, parseCapture, type ParseResult } from '@/lib/ingest'
 import { nexus, type ServiceStatus } from '@/lib/api'
+import { loadGeoDatabase } from '@/lib/geoip'
 import { PATTERN_ORDER } from '@/lib/patterns'
 
 export type View = 'landing' | 'command' | 'graph' | 'alerts' | 'patterns' | 'intake'
@@ -169,6 +170,8 @@ export const useNexus = create<NexusState>((set, get) => ({
     if (get().analysis) return
     const status = await nexus.status()
     set({ status, loadingStage: 1 })
+    // Absent is normal — captures that carry geo_country resolve without it.
+    await loadGeoDatabase()
     const analysis = await nexus.analysis()
     set({
       analysis,
@@ -481,7 +484,7 @@ function buildReplayTrack(a: Analysis): Transaction[] {
     if (p.walletIds.includes(subject)) p.walletIds.forEach((w) => involved.add(w))
   }
   return a.dataset.transactions
-    .filter((t) => involved.has(t.sourceWallet) || involved.has(t.destinationWallet))
+    .filter((t) => [...t.inputs, ...t.outputs].some((side) => involved.has(side.wallet)))
     .sort((x, y) => x.timestamp - y.timestamp)
 }
 

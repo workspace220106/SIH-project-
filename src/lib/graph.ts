@@ -59,6 +59,8 @@ export interface GraphIndex {
   neighbours: Map<string, string[]>
   outgoing: Map<string, string[]>
   incoming: Map<string, string[]>
+  /** transaction id → every edge on either of its sides */
+  edgesByTx: Map<string, string[]>
   txById: Map<string, Transaction>
   walletById: Map<string, Wallet>
 }
@@ -159,10 +161,10 @@ export function assemble(dataset: Dataset, seed = 26146): Analysis {
   // ---- temporal features ----------------------------------------------
   const walletTimes = new Map<string, number[]>()
   for (const tx of transactions) {
-    for (const w of [tx.sourceWallet, tx.destinationWallet]) {
-      const arr = walletTimes.get(w) ?? []
+    for (const side of [...tx.inputs, ...tx.outputs]) {
+      const arr = walletTimes.get(side.wallet) ?? []
       arr.push(tx.timestamp)
-      walletTimes.set(w, arr)
+      walletTimes.set(side.wallet, arr)
     }
   }
   const medianGap = new Map<string, number>()
@@ -204,9 +206,11 @@ export function assemble(dataset: Dataset, seed = 26146): Analysis {
 
     const bridge = new Set(
       transactions
-        .filter((t) => t.sourceWallet === w.id || t.destinationWallet === w.id)
-        .map((t) =>
-          walletById.get(t.sourceWallet === w.id ? t.destinationWallet : t.sourceWallet)?.cluster ?? -1,
+        .filter((t) => [...t.inputs, ...t.outputs].some((side) => side.wallet === w.id))
+        .flatMap((t) =>
+          [...t.inputs, ...t.outputs]
+            .filter((side) => side.wallet !== w.id)
+            .map((side) => walletById.get(side.wallet)?.cluster ?? -1),
         ),
     ).size
     const graph = clamp(
@@ -219,7 +223,7 @@ export function assemble(dataset: Dataset, seed = 26146): Analysis {
     )
 
     const behaviour = clamp(
-      pats.length === 0 ? 6 + Math.min(16, w.txCount * 0.9) : maxStrength * 86 + (isAnchor ? 4 : 0),
+      pats.length === 0 ? 6 + Math.min(16, w.txCount * 0.9) : maxStrength * 86 + (isAnchor ? 8 : 0),
     )
 
     w.risk = buildRisk(
@@ -270,23 +274,30 @@ export function assemble(dataset: Dataset, seed = 26146): Analysis {
   }
 
   const amountCeil = percentile(transactions.map((t) => t.amount), 0.95)
+  const ipByAddress = new Map(ips.map((i) => [i.address, i]))
+
+  const edgesByTx = new Map<string, string[]>()
 
   for (const tx of transactions) {
-    const s = walletById.get(tx.sourceWallet)!
-    const d = walletById.get(tx.destinationWallet)!
+    const parties = [...tx.inputs, ...tx.outputs]
+      .map((side) => walletById.get(side.wallet))
+      .filter((w): w is Wallet => !!w)
+    if (!parties.length) continue
+    const primary = walletById.get(tx.inputs[0]?.wallet ?? '') ?? parties[0]
     const pats = txPatterns.get(tx.id) ?? []
     const patIds = pats.map((p) => p.id)
     const risk = clamp(
-      Math.max(s.risk.score, d.risk.score) * 0.72 +
+      Math.max(...parties.map((w) => w.risk.score)) * 0.72 +
         (pats.length ? 22 * pats.reduce((a, p) => Math.max(a, p.strength), 0) : 0),
     )
+    const host = ipByAddress.get(tx.srcIp)
 
     entities.push({
       id: tx.id,
       kind: 'transaction',
       label: shortTxid(tx.txid),
       risk,
-      cluster: s.cluster,
+      cluster: primary.cluster,
       x: 0,
       y: 0,
       z: 0,
@@ -297,37 +308,49 @@ export function assemble(dataset: Dataset, seed = 26146): Analysis {
         txid: tx.txid,
         amount: tx.amount,
         fee: tx.fee,
-        inputs: tx.inputs,
-        outputs: tx.outputs,
-        ip: tx.observedIp,
-        port: tx.port,
-        source: s.address,
-        destination: d.address,
+        inputs: tx.inputs.length,
+        outputs: tx.outputs.length,
+        scriptType: tx.scriptType,
+        srcIp: tx.srcIp + ':' + tx.srcPort,
+        dstIp: tx.dstIp + ':' + tx.dstPort,
+        country: host?.country ?? 'ZZ',
+        asn: host?.asn ?? 'AS0',
       },
     })
 
-    edges.push({
-      id: 'e-' + tx.id + '-i',
-      source: tx.sourceWallet,
-      target: tx.id,
-      kind: 'flow',
-      weight: tx.amount,
-      amount: tx.amount,
-      timestamp: tx.timestamp,
-      suspicious: pats.length > 0,
-      patterns: patIds,
+    // One edge per side, so a fan-out transaction is visibly a fan.
+    const txEdges: string[] = []
+    tx.inputs.forEach((side, i) => {
+      const id = 'e-' + tx.id + '-i' + i
+      txEdges.push(id)
+      edges.push({
+        id,
+        source: side.wallet,
+        target: tx.id,
+        kind: 'flow',
+        weight: side.amount,
+        amount: side.amount,
+        timestamp: tx.timestamp,
+        suspicious: pats.length > 0,
+        patterns: patIds,
+      })
     })
-    edges.push({
-      id: 'e-' + tx.id + '-o',
-      source: tx.id,
-      target: tx.destinationWallet,
-      kind: 'flow',
-      weight: tx.amount,
-      amount: tx.amount,
-      timestamp: tx.timestamp,
-      suspicious: pats.length > 0,
-      patterns: patIds,
+    tx.outputs.forEach((side, i) => {
+      const id = 'e-' + tx.id + '-o' + i
+      txEdges.push(id)
+      edges.push({
+        id,
+        source: tx.id,
+        target: side.wallet,
+        kind: 'flow',
+        weight: side.amount,
+        amount: side.amount,
+        timestamp: tx.timestamp,
+        suspicious: pats.length > 0,
+        patterns: patIds,
+      })
     })
+    edgesByTx.set(tx.id, txEdges)
   }
 
   for (const ip of ips) {
@@ -352,6 +375,8 @@ export function assemble(dataset: Dataset, seed = 26146): Analysis {
       meta: {
         address: ip.address,
         port: ip.port,
+        country: ip.country,
+        asn: ip.asn,
         observations: ip.observationCount,
         wallets: linked.length,
       },
@@ -436,6 +461,7 @@ export function assemble(dataset: Dataset, seed = 26146): Analysis {
     neighbours,
     outgoing,
     incoming,
+    edgesByTx,
     txById,
     walletById,
   }
@@ -497,6 +523,15 @@ export function assemble(dataset: Dataset, seed = 26146): Analysis {
     .sort((a, b) => b.risk.score - a.risk.score)
     .slice(0, 34)
 
+  // Which country a wallet's traffic came from is a network-layer fact, so it
+  // is resolved from the hosts that carried it rather than from the wallet.
+  const countryByWallet = new Map<string, string>()
+  for (const ip of ips) {
+    for (const w of ip.linkedWallets) {
+      if (!countryByWallet.has(w) && ip.country !== 'ZZ') countryByWallet.set(w, ip.country)
+    }
+  }
+
   const alerts: Alert[] = alertWallets.map((w, i) => {
     const pats = walletPatterns.get(w.id) ?? []
     const top = pats.sort((a, b) => b.strength - a.strength)[0]
@@ -507,6 +542,7 @@ export function assemble(dataset: Dataset, seed = 26146): Analysis {
       priority: w.risk.priority,
       risk: w.risk.score,
       pattern: top?.id ?? 'BURST_ACTIVITY',
+      country: countryByWallet.get(w.id) ?? 'ZZ',
       timestamp: top?.detectedAt ?? w.lastSeen,
       confidence: w.risk.confidence,
       acknowledged: false,
@@ -579,7 +615,7 @@ export function buildEvidence(
   const ranked = [...pats].sort((a, b) => b.strength - a.strength)
   const items: Evidence[] = ranked.map((p, i) => {
     const def = PATTERN_DEFS[p.id]
-    const relatedEdges = p.txIds.flatMap((t) => ['e-' + t + '-i', 'e-' + t + '-o'])
+    const relatedEdges = p.txIds.flatMap((t) => index.edgesByTx.get(t) ?? [])
     return {
       index: i + 1,
       type: p.id,
@@ -662,7 +698,7 @@ function buildTimeline(
     timestamp: wallet.firstSeen,
     kind: 'transaction',
     title: 'First observed transaction',
-    detail: 'Subject enters the capture window on ' + (index.txById.get(firstTxId ?? '')?.observedIp ?? 'an unresolved host'),
+    detail: 'Subject enters the capture window on ' + (index.txById.get(firstTxId ?? '')?.srcIp ?? 'an unresolved host'),
     entityId: firstTxId ?? wallet.id,
   })
 
@@ -770,33 +806,43 @@ export function tracePath(
         ? (index.outgoing.get(current) ?? [])
         : (index.incoming.get(current) ?? [])
 
-    const candidates = edgeIds
+    const reachable = edgeIds
       .map((id) => index.edgeById.get(id)!)
       .filter((e) => e.kind === 'flow')
-      .map((e) => {
-        const txId = direction === 'forward' ? e.target : e.source
-        return { edge: e, tx: index.txById.get(txId) }
+      .map((e) => index.txById.get(direction === 'forward' ? e.target : e.source))
+      .filter((t): t is Transaction => !!t)
+
+    // Follow the largest side that has not been visited: with real input and
+    // output arrays the branch to follow is a property of the side, not of the
+    // transaction as a whole.
+    let best: { tx: Transaction; wallet: string; amount: number; edgeId: string } | null = null
+    for (const candidate of reachable) {
+      const sides = direction === 'forward' ? candidate.outputs : candidate.inputs
+      sides.forEach((side, idx) => {
+        if (seen.has(side.wallet)) return
+        if (!best || side.amount > best.amount) {
+          best = {
+            tx: candidate,
+            wallet: side.wallet,
+            amount: side.amount,
+            edgeId: 'e-' + candidate.id + (direction === 'forward' ? '-o' : '-i') + idx,
+          }
+        }
       })
-      .filter((c) => !!c.tx)
-      .sort((a, b) => (b.tx!.amount ?? 0) - (a.tx!.amount ?? 0))
+    }
+    if (!best) break
 
-    const chosen = candidates.find((c) => {
-      const nextWallet =
-        direction === 'forward' ? c.tx!.destinationWallet : c.tx!.sourceWallet
-      return !seen.has(nextWallet)
-    })
-    if (!chosen) break
-
-    const tx = chosen.tx!
-    const nextWallet = direction === 'forward' ? tx.destinationWallet : tx.sourceWallet
+    const chosen: { tx: Transaction; wallet: string; amount: number; edgeId: string } = best
+    const tx = chosen.tx
+    const nextWallet = chosen.wallet
     hops.push({
       index: i + 1,
       fromEntity: direction === 'forward' ? current : nextWallet,
       toEntity: direction === 'forward' ? nextWallet : current,
       txid: tx.txid,
-      amount: tx.amount,
+      amount: chosen.amount,
       timestamp: tx.timestamp,
-      edgeId: 'e-' + tx.id + (direction === 'forward' ? '-o' : '-i'),
+      edgeId: chosen.edgeId,
     })
     seen.add(nextWallet)
     current = nextWallet

@@ -78,11 +78,12 @@ export function AlertCentre() {
         </div>
 
         {/* Header */}
-        <div className="grid grid-cols-[92px_1fr_58px_112px_78px_84px] items-center gap-3 border-b border-line px-4 py-1.5">
+        <div className="grid grid-cols-[92px_1fr_58px_112px_54px_70px_78px] items-center gap-3 border-b border-line px-4 py-1.5">
           <HeaderCell label="PRIORITY" onClick={() => setSort('priority')} active={sort === 'priority'} />
           <HeaderCell label="ENTITY" />
           <HeaderCell label="RISK" onClick={() => setSort('risk')} active={sort === 'risk'} align="right" />
           <HeaderCell label="PATTERN" />
+          <HeaderCell label="COUNTRY" />
           <HeaderCell label="TIME" onClick={() => setSort('time')} active={sort === 'time'} align="right" />
           <HeaderCell
             label="CONFIDENCE"
@@ -100,7 +101,7 @@ export function AlertCentre() {
                 onClick={() => setActive(a.id)}
                 onDoubleClick={() => open(a)}
                 className={clsx(
-                  'grid-row grid w-full grid-cols-[92px_1fr_58px_112px_78px_84px] items-center gap-3 px-4 py-[7px] text-left',
+                  'grid-row grid w-full grid-cols-[92px_1fr_58px_112px_54px_70px_78px] items-center gap-3 px-4 py-[7px] text-left',
                   selected?.id === a.id && 'bg-accent/[0.05]',
                 )}
               >
@@ -113,6 +114,14 @@ export function AlertCentre() {
                 </span>
                 <span className="truncate font-mono text-3xs uppercase tracking-[0.12em] text-faint">
                   {PATTERN_DEFS[a.pattern].shortName}
+                </span>
+                <span
+                  className={clsx(
+                    'font-mono text-3xs uppercase tracking-[0.12em]',
+                    a.country === 'ZZ' ? 'text-ghost' : 'text-muted',
+                  )}
+                >
+                  {a.country === 'ZZ' ? '—' : a.country}
                 </span>
                 <span className="text-right font-mono text-3xs tabular-nums text-faint">
                   {fmtTime(a.timestamp).slice(0, 5)}

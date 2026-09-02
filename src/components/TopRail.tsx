@@ -5,16 +5,15 @@ import { useNexus, type View } from '@/state/store'
 /** All registered system modules kept in codebase for future scope. */
 export const ALL_MODULES: Array<{ view: View; label: string; key: string }> = [
   { view: 'command', label: 'COMMAND', key: '1' },
-  { view: 'graph', label: 'INVESTIGATION', key: '1' },
-  { view: 'alerts', label: 'ALERTS', key: '2' },
-  { view: 'patterns', label: 'PATTERNS', key: '2' },
-  { view: 'intake', label: 'INTAKE', key: '3' },
+  { view: 'graph', label: 'INVESTIGATION', key: '2' },
+  { view: 'alerts', label: 'ALERTS', key: '3' },
+  { view: 'patterns', label: 'PATTERNS', key: '4' },
+  { view: 'intake', label: 'INTAKE', key: '5' },
 ]
 
-/** Active modules shown in the navigation bar. */
-const VISIBLE_MODULES = ALL_MODULES.filter(
-  (m) => m.view !== 'command' && m.view !== 'alerts',
-)
+/** Active modules shown in the navigation bar. The shortcut shown on each tab
+ *  is the one the keyboard handler actually listens for. */
+const VISIBLE_MODULES = ALL_MODULES.filter((m) => m.view !== 'command')
 
 /** One row: who we are, where we are, and the synthetic status. */
 export function TopRail() {

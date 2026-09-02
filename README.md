@@ -56,17 +56,45 @@ INGEST → CLEAN → NORMALISE → CORRELATE (IP ↔ TXID ↔ TIME) → TEMPORAL
 | Rapid movement | short dwell | `median(t_out − t_in) < 120s across ≥ 3 consecutive wallets` |
 | Burst activity | high frequency | `rate(Δt=600s) > 8 × baseline_rate(cluster)` |
 | Peeling / multi-hop | A → B → C → D | `chain_len ≥ 4 ∧ 0.10 < peel_ratio < 0.40 per hop` |
+| CoinJoin / mixing | many ⇄ many | `inputs ≥ 3 ∧ outputs ≥ 3 ∧ σ(out)/μ(out) < 0.10` |
+
+### The model
+
+Detection is **not** rules alone. An **Isolation Forest** (`src/lib/ml/`) is fitted on every
+capture that loads — 120 trees, 256-row subsamples — over eight per-wallet features: outgoing and
+incoming degree, transaction count, value moved, velocity, amount uniformity, burst fan-out, and
+mean outputs per transaction.
+
+It is **unsupervised by necessity**: a capture arrives with no labels, so there is nothing for a
+classifier to train against. Isolation Forest needs none — it exploits the fact that anomalies are
+few and different, and so are separated by fewer random splits than ordinary points.
+
+**Explainability is per-instance ablation.** Each feature is reset to the population median in
+turn and the wallet re-scored; the drop in score is that feature's contribution. The result reads
+as *"Burst fan-out 25%, Transaction count 23%, Outgoing degree 20%"* and appears as a ranked
+evidence row that lights its own nodes and edges in the graph.
+
+The model runs in-process, in the browser, in well under a second. Nothing is pre-trained and
+nothing is fetched.
+
+### Entity resolution
+
+**Common-input-ownership**: addresses spent together in one transaction must share a private key
+holder, so they are one entity. Transactions that look like CoinJoins are excluded from the merge —
+CoinJoin exists specifically to poison this heuristic, and treating its inputs as one owner is the
+error it is designed to produce.
 
 ### Risk
 
-A composite of four independently computed signals:
+A composite of five independently computed signals:
 
 | Signal | Weight | Derived from |
 | --- | --- | --- |
-| Transaction | 0.30 | volume and count against the capture's own 94th percentile |
-| Graph | 0.28 | degree, and how many behavioural clusters the wallet bridges |
-| Temporal | 0.22 | median inter-transaction gap |
-| Behaviour | 0.20 | which detectors matched, and whether the wallet is their anchor |
+| Model anomaly | 0.26 | the Isolation Forest score, stretched against the capture's own spread |
+| Transaction | 0.22 | volume and count against the capture's 94th percentile |
+| Graph | 0.20 | degree, and how many behavioural clusters the wallet bridges |
+| Behaviour | 0.18 | which detectors matched, and whether the wallet is their anchor |
+| Temporal | 0.14 | median inter-transaction gap |
 
 Confidence rises with the number of corroborating detections and with the *agreement* between
 signals — one loud signal is treated as weaker than three that concur.

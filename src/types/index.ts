@@ -12,6 +12,7 @@ export type PatternId =
   | 'RAPID_MOVEMENT'
   | 'BURST_ACTIVITY'
   | 'PEELING'
+  | 'COINJOIN'
 
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
 export type Confidence = 'LOW' | 'MODERATE' | 'HIGH'
@@ -128,7 +129,7 @@ export interface Edge {
 }
 
 export interface RiskSignal {
-  key: 'transaction' | 'graph' | 'temporal' | 'behaviour'
+  key: 'transaction' | 'graph' | 'temporal' | 'behaviour' | 'anomaly'
   label: string
   /** Raw signal strength 0–100. */
   value: number
@@ -159,7 +160,7 @@ export interface SuspiciousPattern {
 
 export interface Evidence {
   index: number
-  type: PatternId | 'GRAPH_CONNECTIVITY'
+  type: PatternId | 'GRAPH_CONNECTIVITY' | 'ML_ANOMALY' | 'TAINT'
   title: string
   description: string
   metric: string
@@ -287,4 +288,33 @@ export interface Dataset {
   stats: DatasetStats
   /** Present when the capture came from a file rather than the generator. */
   notes?: string[]
+}
+
+/** What the detector is, reported to the analyst rather than assumed. */
+export interface ModelInfo {
+  name: string
+  family: 'unsupervised'
+  trees: number
+  sampleSize: number
+  features: string[]
+  /** Wallets the model was fitted on — the loaded capture, nothing else. */
+  trainedOn: number
+  /** Score above which a wallet is treated as anomalous. */
+  threshold: number
+  flagged: number
+}
+
+/** One feature's share of a single wallet's anomaly score. */
+export interface AnomalyContribution {
+  key: string
+  label: string
+  share: number
+  value: number
+  reads: string
+}
+
+/** Per-wallet output of the anomaly detector. */
+export interface AnomalyResult {
+  score: number
+  contributions: AnomalyContribution[]
 }

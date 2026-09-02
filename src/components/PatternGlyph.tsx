@@ -79,6 +79,25 @@ export function PatternGlyph({ id, active }: { id: PatternId; active?: boolean }
         </>
       )}
 
+      {id === 'COINJOIN' && (
+        <>
+          {/* Many in, many out, every output the same size. */}
+          {Array.from({ length: 4 }).map((_, i) => (
+            <g key={'i' + i}>
+              <rect x={16} y={10 + i * 11} width={5} height={5} fill={node} />
+              <line x1={21} y1={12.5 + i * 11} x2={58} y2={30} stroke={faint} strokeWidth={0.8} />
+            </g>
+          ))}
+          <rect x={56} y={20} width={20} height={20} rx={2} fill="none" stroke={stroke} strokeWidth={1.2} />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <g key={'o' + i}>
+              <line x1={76} y1={30} x2={108} y2={12.5 + i * 11} stroke={faint} strokeWidth={0.8} />
+              <rect x={108} y={10 + i * 11} width={7} height={5} fill={node} />
+            </g>
+          ))}
+        </>
+      )}
+
       {id === 'PEELING' && (
         <>
           {[14, 42, 70, 98].map((x, i) => (

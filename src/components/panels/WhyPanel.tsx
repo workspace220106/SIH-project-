@@ -38,7 +38,7 @@ export function WhyPanel() {
   const evidence = useMemo(() => {
     if (!analysis || !wallet) return [] as Evidence[]
     const pats = analysis.dataset.planted.filter((p) => p.walletIds.includes(wallet.id))
-    return buildEvidence(wallet, pats, analysis.index)
+    return buildEvidence(wallet, pats, analysis.index, analysis.anomalies.get(wallet.id))
   }, [analysis, wallet])
 
   useEffect(() => () => window.clearTimeout(timer.current), [])

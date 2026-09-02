@@ -152,6 +152,8 @@ export function generateDataset(seed = 26146): Dataset {
     amt: number,
     extraOutputs: TxParty[] = [],
     extra?: Partial<Transaction>,
+    /** Addresses the same operator co-spends from in this transaction. */
+    coInputs: Wallet[] = [],
   ) => {
     const outputs = [{ wallet: d.id, amount: amt }, ...extraOutputs]
     const total = outputs.reduce((a, o) => a + o.amount, 0)
@@ -164,7 +166,16 @@ export function generateDataset(seed = 26146): Dataset {
       const alternatives = ips.filter((h) => h.address !== srcHost.address)
       if (alternatives.length) dstHost = pick(r, alternatives)
     }
-    const tx = makeTx(r, [{ wallet: s.id, amount: total }], outputs, t, srcHost, dstHost, extra)
+    // Several inputs means one signer held every key — the basis of the
+    // common-input-ownership heuristic downstream.
+    const inputs: TxParty[] =
+      coInputs.length > 0
+        ? [s, ...coInputs].map((w, i) => ({
+            wallet: w.id,
+            amount: i === 0 ? total * 0.55 : (total * 0.45) / coInputs.length,
+          }))
+        : [{ wallet: s.id, amount: total }]
+    const tx = makeTx(r, inputs, outputs, t, srcHost, dstHost, extra)
     transactions.push(tx)
     return tx
   }
@@ -184,13 +195,24 @@ export function generateDataset(seed = 26146): Dataset {
   const fanOutHub = fanOutSet[0]
   const fanOutTargets = fanOutSet.slice(1, 18)
   const fanOutStart = EPOCH + 92 * MIN
+  // The operator holds more than one address. Co-spending from them is what
+  // lets common-input-ownership recover the full set later.
+  const hubControlled = fanOutSet.slice(18, 20)
   const fanOutTx = fanOutTargets.map((d, i) =>
-    emit(fanOutHub, d, fanOutStart + i * between(r, 12_000, 34_000), between(r, 0.09, 0.31)),
+    emit(
+      fanOutHub,
+      d,
+      fanOutStart + i * between(r, 12_000, 34_000),
+      between(r, 0.09, 0.31),
+      [],
+      undefined,
+      i % 3 === 0 ? hubControlled : [],
+    ),
   )
   planted.push({
     id: 'FAN_OUT',
     cluster: 1,
-    walletIds: [fanOutHub.id, ...fanOutTargets.map((w) => w.id)],
+    walletIds: [fanOutHub.id, ...hubControlled.map((w) => w.id), ...fanOutTargets.map((w) => w.id)],
     txIds: fanOutTx.map((t) => t.id),
     anchorWallet: fanOutHub.id,
     strength: 0.94,
@@ -293,6 +315,34 @@ export function generateDataset(seed = 26146): Dataset {
     strength: 0.89,
     detectedAt: relayT,
     metric: 'median dwell 47s across ' + (relay.length - 1) + ' transfers',
+  })
+
+  // ---- COINJOIN: many in, many out, all outputs the same size ----------
+  const joinInputs = [burstSet[1], ...byCluster(5).slice(0, 3)]
+  const joinOutputs = [fanOutHub, ...byCluster(5).slice(3, 6)]
+  const joinAmount = 0.412
+  const joinHostSrc = ipFor(joinInputs[0])
+  const joinHostDst = ipFor(joinOutputs[1])
+  const joinTx = makeTx(
+    r,
+    joinInputs.map((w) => ({ wallet: w.id, amount: joinAmount + between(r, 0.0004, 0.0021) })),
+    // Equal-value outputs are the whole point: no output can be matched to an input.
+    joinOutputs.map((w) => ({ wallet: w.id, amount: joinAmount })),
+    EPOCH + 246 * MIN,
+    joinHostSrc,
+    joinHostDst,
+  )
+  transactions.push(joinTx)
+  planted.push({
+    id: 'COINJOIN',
+    cluster: 5,
+    walletIds: [...joinInputs, ...joinOutputs].map((w) => w.id),
+    txIds: [joinTx.id],
+    anchorWallet: joinInputs[0].id,
+    strength: 0.86,
+    detectedAt: joinTx.timestamp,
+    metric:
+      joinInputs.length + ' inputs → ' + joinOutputs.length + ' equal outputs of ' + joinAmount.toFixed(3) + ' BTC',
   })
 
   // ---- Bridges: the clusters are not islands ---------------------------

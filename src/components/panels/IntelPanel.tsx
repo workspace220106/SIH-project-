@@ -219,7 +219,7 @@ function Attributes({ entity }: { entity: Entity }) {
   // Five fields answer the question an analyst opens a node with. The rest are
   // available, but they are not the default state of the panel.
   const PRIMARY: Record<string, string[]> = {
-    wallet: ['transactions', 'received', 'sent', 'degreeIn', 'degreeOut'],
+    wallet: ['entity', 'transactions', 'received', 'sent', 'degreeIn', 'degreeOut'],
     // The network-layer fields are what make a transaction correlatable, so
     // they belong in the default view rather than behind the disclosure.
     transaction: ['amount', 'fee', 'inputs', 'outputs', 'srcIp', 'country'],

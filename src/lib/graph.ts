@@ -1,6 +1,8 @@
 import type {
   Alert,
+  AnomalyResult,
   Dataset,
+  ModelInfo,
   ClusterSummary,
   Confidence,
   Edge,
@@ -19,6 +21,9 @@ import type {
 import { clusterLabel, generateDataset, type PlantedPattern } from '@/data/synthetic'
 import { runLayout, type LayoutLink, type LayoutNode } from '@/lib/layout'
 import { PATTERN_DEFS, PATTERN_ORDER } from '@/lib/patterns'
+import { IsolationForest } from '@/lib/ml/isolationForest'
+import { explainScore, extractFeatures, FEATURES } from '@/lib/ml/features'
+import { commonInputOwnership, type OwnershipClustering } from '@/lib/entities'
 
 /* ------------------------------------------------------------------ *
  * Small numeric helpers
@@ -75,6 +80,12 @@ export interface Analysis {
   leads: Lead[]
   timeline: TimelineEvent[]
   index: GraphIndex
+  /** What the detector is, so the interface never has to assert it. */
+  model: ModelInfo
+  /** walletId → anomaly score and the features that produced it. */
+  anomalies: Map<string, AnomalyResult>
+  /** Address sets recovered by the common-input-ownership heuristic. */
+  ownership: OwnershipClustering
   /** The wallet the pipeline surfaces first — the demonstration subject. */
   primarySubject: string
 }
@@ -83,10 +94,22 @@ export interface Analysis {
  * Risk model
  * ------------------------------------------------------------------ */
 
-const SIGNAL_WEIGHTS = { transaction: 0.3, graph: 0.28, temporal: 0.22, behaviour: 0.2 } as const
+const SIGNAL_WEIGHTS = {
+  transaction: 0.22,
+  graph: 0.2,
+  temporal: 0.14,
+  behaviour: 0.18,
+  anomaly: 0.26,
+} as const
 
 function buildRisk(
-  values: { transaction: number; graph: number; temporal: number; behaviour: number },
+  values: {
+    transaction: number
+    graph: number
+    temporal: number
+    behaviour: number
+    anomaly: number
+  },
   detail: Record<keyof typeof values, string>,
   evidenceCount: number,
 ): RiskScore {
@@ -96,6 +119,7 @@ function buildRisk(
       ['graph', 'Graph', values.graph],
       ['temporal', 'Temporal', values.temporal],
       ['behaviour', 'Behaviour', values.behaviour],
+      ['anomaly', 'Model anomaly', values.anomaly],
     ] as const
   ).map(([key, label, value]) => ({
     key,
@@ -190,6 +214,35 @@ export function assemble(dataset: Dataset, seed = 26146): Analysis {
     if (!existing || p.strength > existing.strength) clusterPattern.set(p.cluster, p)
   })
 
+  // ---- entity resolution ------------------------------------------------
+  // Addresses that co-spend are one entity. Run before scoring so the graph
+  // and the panels can both speak in terms of entities, not just addresses.
+  const ownership = commonInputOwnership(wallets, transactions)
+
+  // ---- anomaly detection ------------------------------------------------
+  // Unsupervised, fitted on this capture and nothing else: an incoming capture
+  // carries no labels, so there is nothing for a classifier to learn from.
+  const featureMatrix = extractFeatures(wallets, transactions)
+  const forest = new IsolationForest({ trees: 120, sampleSize: 256, seed }).fit(featureMatrix.rows)
+  const rawScores = forest.scoreAll(featureMatrix.rows)
+
+  // Isolation Forest scores cluster tightly around 0.5; stretching against the
+  // capture's own spread is what makes the number readable as 0-100.
+  const scoreFloor = percentile(rawScores, 0.5)
+  const scoreCeil = Math.max(scoreFloor + 0.01, percentile(rawScores, 0.99))
+  const ANOMALY_THRESHOLD = percentile(rawScores, 0.9)
+
+  const anomalies = new Map<string, AnomalyResult>()
+  const anomalyValue = new Map<string, number>()
+  featureMatrix.walletIds.forEach((id, i) => {
+    const raw = rawScores[i]
+    anomalies.set(id, {
+      score: raw,
+      contributions: explainScore(forest, featureMatrix.rows[i], featureMatrix.medians),
+    })
+    anomalyValue.set(id, clamp(((raw - scoreFloor) / (scoreCeil - scoreFloor)) * 100))
+  })
+
   // ---- wallet scoring ---------------------------------------------------
   for (const w of wallets) {
     const pats = walletPatterns.get(w.id) ?? []
@@ -226,8 +279,11 @@ export function assemble(dataset: Dataset, seed = 26146): Analysis {
       pats.length === 0 ? 6 + Math.min(16, w.txCount * 0.9) : maxStrength * 86 + (isAnchor ? 8 : 0),
     )
 
+    const anomaly = anomalyValue.get(w.id) ?? 0
+    const topFeature = anomalies.get(w.id)?.contributions[0]
+
     w.risk = buildRisk(
-      { transaction, graph, temporal, behaviour },
+      { transaction, graph, temporal, behaviour, anomaly },
       {
         transaction:
           volume.toFixed(2) + ' BTC across ' + w.txCount + ' transactions',
@@ -237,6 +293,9 @@ export function assemble(dataset: Dataset, seed = 26146): Analysis {
         behaviour: pats.length
           ? pats.map((p) => PATTERN_DEFS[p.id].shortName).join(' + ')
           : 'no matched pattern',
+        anomaly: topFeature
+          ? 'isolation forest, driven by ' + topFeature.label.toLowerCase()
+          : 'isolation forest, no dominant feature',
       },
       pats.length + (bridge > 1 ? 1 : 0),
     )
@@ -268,6 +327,7 @@ export function assemble(dataset: Dataset, seed = 26146): Analysis {
         sent: Number(w.totalOut.toFixed(4)),
         degreeIn: w.degreeIn,
         degreeOut: w.degreeOut,
+        entity: entityLabel(ownership, w.id),
         cluster: clusterLabel(w.cluster),
       },
     })
@@ -557,7 +617,7 @@ export function assemble(dataset: Dataset, seed = 26146): Analysis {
     .slice(0, 6)
 
   const leads: Lead[] = leadWallets.map((w, i) => {
-    const ev = buildEvidence(w, walletPatterns.get(w.id) ?? [], index)
+    const ev = buildEvidence(w, walletPatterns.get(w.id) ?? [], index, anomalies.get(w.id))
     const pats = walletPatterns.get(w.id) ?? []
     return {
       id: 'LEAD-' + (47 - i),
@@ -591,6 +651,18 @@ export function assemble(dataset: Dataset, seed = 26146): Analysis {
     leads,
     timeline,
     index,
+    model: {
+      name: 'Isolation Forest',
+      family: 'unsupervised',
+      trees: forest.treeCount,
+      sampleSize: Math.min(forest.sampleSize, featureMatrix.rows.length),
+      features: FEATURES.map((f) => f.label),
+      trainedOn: featureMatrix.rows.length,
+      threshold: ANOMALY_THRESHOLD,
+      flagged: rawScores.filter((s) => s >= ANOMALY_THRESHOLD).length,
+    },
+    anomalies,
+    ownership,
     primarySubject,
   }
 }
@@ -611,6 +683,7 @@ export function buildEvidence(
   wallet: Wallet,
   pats: PlantedPattern[],
   index: GraphIndex,
+  anomaly?: AnomalyResult,
 ): Evidence[] {
   const ranked = [...pats].sort((a, b) => b.strength - a.strength)
   const items: Evidence[] = ranked.map((p, i) => {
@@ -627,6 +700,27 @@ export function buildEvidence(
       strength: p.strength,
     }
   })
+
+  // The model gets its own row, phrased as what it reacted to rather than as a
+  // bare number. Without this an analyst cannot check the detector's working.
+  if (anomaly && anomaly.contributions.length) {
+    const top = anomaly.contributions[0]
+    const drivers = anomaly.contributions
+      .slice(0, 3)
+      .map((c) => c.label + ' ' + Math.round(c.share * 100) + '%')
+      .join(' · ')
+    items.push({
+      index: items.length + 1,
+      type: 'ML_ANOMALY',
+      title: 'MODEL ANOMALY',
+      description:
+        'Isolation Forest, fitted unsupervised on this capture alone. The score is how few random splits were needed to separate this wallet from the rest — anomalies isolate faster than ordinary points. Contributions come from re-scoring the wallet with each feature reset to the population median.',
+      metric: drivers + ' — ' + top.reads,
+      relatedEntities: [wallet.id, ...(index.neighbours.get(wallet.id) ?? []).slice(0, 24)],
+      relatedEdges: (index.incident.get(wallet.id) ?? []).slice(0, 40),
+      strength: Math.min(0.97, 0.45 + anomaly.score * 0.9),
+    })
+  }
 
   // Connectivity is always the closing item: it is what ties the rest together.
   const neighbourIds = index.neighbours.get(wallet.id) ?? []
@@ -860,6 +954,14 @@ export function tracePath(
 /* ------------------------------------------------------------------ *
  * Formatting
  * ------------------------------------------------------------------ */
+
+/** "E004 · 3 addresses" — or the single-address case, said plainly. */
+export function entityLabel(ownership: OwnershipClustering, walletId: string): string {
+  const id = ownership.entityOf.get(walletId)
+  if (!id) return 'unresolved'
+  const size = ownership.groups.get(id)?.walletIds.length ?? 1
+  return size > 1 ? id + ' · ' + size + ' addresses' : id + ' · single address'
+}
 
 export const shortTxid = (txid: string) => txid.slice(0, 4) + '…' + txid.slice(-4)
 export const shortAddr = (addr: string) =>

@@ -52,6 +52,16 @@ export const PATTERN_DEFS: Record<PatternId, PatternDefinition> = {
       'Transaction frequency inside a cluster spikes far above its own baseline. Read the burst window, not the raw count.',
     disposition: 'Bound the window, then enumerate every wallet active inside it.',
   },
+  COINJOIN: {
+    id: 'COINJOIN',
+    name: 'CoinJoin / Mixing',
+    shortName: 'COINJOIN',
+    shape: 'MANY ⇄ MANY',
+    formula: 'inputs ≥ 3 ∧ outputs ≥ 3 ∧ σ(output_amount) / μ(output_amount) < 0.10',
+    description:
+      'One transaction with many inputs and many near-identical outputs. Several parties have combined a spend so that no output can be tied back to a particular input — the structure exists to break the link, which is why it is worth recording even though using it is not itself an offence.',
+    disposition: 'Do not trace value through it. Record the participants and pick the trail up either side.',
+  },
   PEELING: {
     id: 'PEELING',
     name: 'Peeling / Multi-Hop',
@@ -70,4 +80,5 @@ export const PATTERN_ORDER: PatternId[] = [
   'RAPID_MOVEMENT',
   'BURST_ACTIVITY',
   'PEELING',
+  'COINJOIN',
 ]

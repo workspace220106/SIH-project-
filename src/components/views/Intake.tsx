@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import { useNexus } from '@/state/store'
 import { INGEST_STAGES } from '@/lib/api'
 import { geoDatabaseStatus } from '@/lib/geoip'
+import { useNexus as useStore } from '@/state/store'
 import { Label } from '@/components/ui'
 
 const SCHEMA: Array<[string, string, string]> = [
@@ -212,12 +213,53 @@ export function Intake() {
             </p>
           </section>
 
+          {/* Model */}
+          <section className="mt-7">
+            <Label>Detection model</Label>
+            <ModelCard />
+          </section>
+
           {/* GeoIP */}
           <section className="mt-7">
             <Label>GeoIP database</Label>
             <GeoStatus />
           </section>
         </div>
+      </div>
+    </div>
+  )
+}
+
+/** States what the detector is, so no one has to take the word "AI" on trust. */
+function ModelCard() {
+  const model = useStore((st) => st.analysis?.model)
+  const flaggedShare = model && model.trainedOn ? (model.flagged / model.trainedOn) * 100 : 0
+  if (!model) return null
+  return (
+    <div className="mt-3 max-w-[620px] rounded-2xl border border-line bg-surface/80 px-4 py-3 shadow-sm">
+      <div className="flex items-baseline gap-2">
+        <span className="h-[6px] w-[6px] rounded-full bg-accent" />
+        <span className="font-mono text-2xs uppercase tracking-[0.14em] text-ink">{model.name}</span>
+        <span className="font-mono text-3xs uppercase tracking-[0.12em] text-faint">
+          {model.family}
+        </span>
+        <span className="ml-auto font-mono text-3xs tabular-nums text-muted">
+          {model.trees} trees · sample {model.sampleSize}
+        </span>
+      </div>
+      <p className="mt-2 text-[11.5px] leading-relaxed text-faint">
+        Fitted on this capture alone — {model.trainedOn} wallets, no labels and no pre-trained
+        weights, because an incoming capture carries no ground truth to learn from. It flagged{' '}
+        {model.flagged} wallets ({flaggedShare.toFixed(0)}%) above the 90th-percentile threshold.
+        Each score is explained by re-scoring the wallet with one feature at a time reset to the
+        population median.
+      </p>
+      <div className="mt-2 flex flex-wrap gap-1">
+        {model.features.map((f) => (
+          <span key={f} className="chip border-line-strong text-muted">
+            {f}
+          </span>
+        ))}
       </div>
     </div>
   )

@@ -1,6 +1,7 @@
 /**
- * Developer utility: run the detection engine headlessly and print the
- * scoring distribution. Used to sanity-check the risk model after changes.
+ * Developer utility: run the detection engine headlessly and print what it
+ * produced. Used to sanity-check the risk model and the anomaly detector after
+ * changes, without going through the browser.
  *
  *   npx esbuild scripts/inspect-model.ts --bundle --platform=node \
  *     --format=cjs --alias:@=./src --outfile=.tmp/inspect.cjs && node .tmp/inspect.cjs
@@ -8,33 +9,78 @@
 import { analyse, shortAddr } from '@/lib/graph'
 
 const a = analyse()
+const nl = '\n'
 
 console.log('entities', a.entities.length, 'edges', a.edges.length)
 console.log('dataset', a.dataset.stats)
-console.log('\ntop wallets by risk')
-for (const w of [...a.dataset.wallets].sort((x, y) => y.risk.score - x.risk.score).slice(0, 12)) {
+
+console.log(nl + 'model')
+console.log(' ', a.model.name, '|', a.model.trees, 'trees | sample', a.model.sampleSize)
+console.log('  trained on', a.model.trainedOn, 'wallets |', a.model.flagged, 'above threshold')
+console.log('  features:', a.model.features.join(', '))
+
+console.log(nl + 'top wallets by risk')
+for (const w of [...a.dataset.wallets].sort((x, y) => y.risk.score - x.risk.score).slice(0, 10)) {
   console.log(
+    ' ',
     w.id,
     shortAddr(w.address),
-    'risk', w.risk.score,
-    'conf', w.risk.confidence.toFixed(3),
+    'risk',
+    w.risk.score,
+    'conf',
+    w.risk.confidence.toFixed(3),
     w.risk.priority,
-    'signals', w.risk.signals.map((s) => s.key[0] + s.value).join(' '),
+    '|',
+    w.risk.signals.map((s) => s.key.slice(0, 4) + ':' + s.value).join(' '),
   )
 }
 
-const subject = a.dataset.wallets.find((w) => w.id === a.primarySubject)!
-console.log('\nprimary subject', subject.id, subject.risk.score, subject.risk.confidence)
-console.log('leads', a.leads.map((l) => l.id + ':' + l.risk + '/' + Math.round(l.confidence * 100)).join(' '))
-console.log('alerts', a.alerts.length, 'patterns', a.patterns.length)
-console.log('\nevidence for lead 0')
-a.leads[0]?.evidence.forEach((e) => console.log(' ', e.index, e.title, '|', e.metric, '|', e.strength.toFixed(2)))
-console.log('\nbounds', bounds(a.entities))
+console.log(nl + 'anomaly detector — highest scores and why')
+const ranked = [...a.anomalies.entries()].sort((x, y) => y[1].score - x[1].score).slice(0, 6)
+for (const [id, result] of ranked) {
+  const w = a.dataset.wallets.find((x) => x.id === id)
+  if (!w) continue
+  const drivers = result.contributions
+    .slice(0, 3)
+    .map((c) => c.label + ' ' + Math.round(c.share * 100) + '%')
+    .join(', ')
+  console.log(' ', id, shortAddr(w.address), 'raw', result.score.toFixed(4), '|', drivers)
+}
 
-function bounds(entities: { x: number; y: number; z: number }[]) {
-  const xs = entities.map((e) => e.x)
-  const ys = entities.map((e) => e.y)
-  const zs = entities.map((e) => e.z)
-  const r = (v: number[]) => [Math.min(...v).toFixed(1), Math.max(...v).toFixed(1)].join(' … ')
-  return { x: r(xs), y: r(ys), z: r(zs) }
+const subject = a.dataset.wallets.find((w) => w.id === a.primarySubject)
+if (subject) {
+  console.log(
+    nl + 'primary subject',
+    subject.id,
+    subject.risk.score,
+    subject.risk.confidence.toFixed(3),
+  )
+  console.log('  anomaly contributions:')
+  for (const c of a.anomalies.get(subject.id)?.contributions ?? []) {
+    console.log('   ', Math.round(c.share * 100) + '%', c.label, '—', c.reads)
+  }
+}
+
+console.log(nl + 'leads', a.leads.map((l) => l.id + ':' + l.risk).join(' '))
+console.log('alerts', a.alerts.length, 'patterns', a.patterns.map((p) => p.shortName).join(', '))
+
+console.log(nl + 'evidence for lead 0')
+a.leads[0]?.evidence.forEach((e) =>
+  console.log(' ', e.index, e.title, '|', e.metric, '|', e.strength.toFixed(2)),
+)
+
+const xs = a.entities.map((e) => e.x)
+const ys = a.entities.map((e) => e.y)
+const zs = a.entities.map((e) => e.z)
+const range = (v: number[]) => Math.min(...v).toFixed(0) + ' … ' + Math.max(...v).toFixed(0)
+console.log(nl + 'bounds', { x: range(xs), y: range(ys), z: range(zs) })
+
+console.log(nl + 'common-input-ownership')
+console.log('  entities:', a.ownership.groups.size, '| multi-address:', a.ownership.merged.length)
+for (const g of a.ownership.merged.slice(0, 4)) {
+  const addrs = g.walletIds
+    .map((id) => a.index.walletById.get(id))
+    .filter(Boolean)
+    .map((w) => shortAddr(w!.address))
+  console.log('  ', g.id, '→', addrs.join(', '), '| from', g.evidenceTxIds.length, 'co-spends')
 }

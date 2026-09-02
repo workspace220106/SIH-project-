@@ -183,7 +183,7 @@ function AlertPreview({ alert, onOpen }: { alert: Alert; onOpen: () => void }) {
   const evidence = useMemo(() => {
     if (!analysis || !wallet) return []
     const pats = analysis.dataset.planted.filter((p) => p.walletIds.includes(wallet.id))
-    return buildEvidence(wallet, pats, analysis.index)
+    return buildEvidence(wallet, pats, analysis.index, analysis.anomalies.get(wallet.id))
   }, [analysis, wallet])
 
   if (!wallet) return null

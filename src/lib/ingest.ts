@@ -635,6 +635,36 @@ function detect(wallets: Wallet[], transactions: Transaction[]): Detection[] {
   // --- BURST -------------------------------------------------------------
   out.push(...detectFrequencyOnly(wallets, transactions))
 
+  // --- COINJOIN / MIXING -------------------------------------------------
+  // Many inputs, many outputs, and outputs all the same size. The equal values
+  // are what defeat input-to-output matching.
+  for (const tx of transactions) {
+    if (tx.inputs.length < 3 || tx.outputs.length < 3) continue
+    const amounts = tx.outputs.map((o) => o.amount)
+    const mean = amounts.reduce((a, b) => a + b, 0) / amounts.length
+    if (mean <= 0) continue
+    const sd = Math.sqrt(amounts.reduce((a, b) => a + (b - mean) ** 2, 0) / amounts.length)
+    if (sd / mean >= 0.1) continue
+    const participants = [...new Set([...tx.inputs, ...tx.outputs].map((s) => s.wallet))]
+    out.push(
+      detection(
+        'COINJOIN',
+        wallets.find((w) => w.id === tx.inputs[0].wallet)?.cluster ?? 0,
+        participants,
+        [tx.id],
+        tx.inputs[0].wallet,
+        Math.min(0.94, 0.55 + tx.outputs.length / 20),
+        tx.timestamp,
+        tx.inputs.length +
+          ' inputs → ' +
+          tx.outputs.length +
+          ' equal outputs of ' +
+          mean.toFixed(3) +
+          ' BTC',
+      ),
+    )
+  }
+
   // --- PEELING -----------------------------------------------------------
   // A peel is a transaction with a large continuing output and a small one
   // leaving. Following the large side repeatedly traces the chain.

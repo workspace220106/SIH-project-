@@ -133,6 +133,27 @@ override.
 
 ---
 
+## Preparing a raw capture
+
+Intake has two stages, side by side.
+
+**Prepare** takes a capture as it actually arrives — headers named by whoever wrote the exporter,
+mixed date conventions, amounts in satoshis or carrying a currency mark, ports welded onto
+addresses, array columns encoded three different ways — and produces a canonical CSV you can
+download. It reports what it did: which columns were renamed, how many values were repaired and
+of what kind, and every row it dropped with the line number and the reason.
+
+Repairs are only ever deterministic. Anything that would require a guess is rejected instead:
+an address and amount array of differing lengths means value cannot be attributed to an address,
+so the row goes, and the report says so.
+
+`public/samples/capture-raw-messy.csv` is a deliberately dirty file for exercising this — 95 rows
+across four date formats, three array encodings, satoshi and symbol amounts, with five planted
+defects. It cleans to 90 rows.
+
+**Drop dataset** then takes the canonical file and runs detection. A capture that is already clean
+can go straight in.
+
 ## Importing a capture
 
 Intake accepts CSV, TSV, JSON and XML in the problem statement's field format:

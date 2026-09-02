@@ -116,3 +116,68 @@ const xml = [
 writeFileSync('public/samples/capture-sample.xml', xml + '\n', 'utf8')
 
 console.log('wrote', rows.length, 'transactions in the official field format')
+
+/* ------------------------------------------------------------------ *
+ * A deliberately messy capture, to exercise the preparation stage.
+ * Every defect here is one a real exporter actually produces.
+ * ------------------------------------------------------------------ */
+
+const messyHeader = [
+  'Time Stamp', 'Transaction ID', 'Source IP', 'Dest IP',
+  'From Addresses', 'To Addresses', 'Input Value', 'Output Value',
+  'Fees', 'Type', 'Country', 'AS',
+].join(',')
+
+const q = (v: string) => (/[",]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v)
+
+const messyLines = rows.slice(0, 90).map((r, i) => {
+  const iso = r.timestamp
+  const d = new Date(iso)
+  const pad = (n: number) => String(n).padStart(2, '0')
+
+  // Four different date conventions across the file.
+  const when =
+    i % 4 === 0
+      ? String(Math.floor(d.getTime() / 1000))
+      : i % 4 === 1
+        ? pad(d.getUTCDate()) + '/' + pad(d.getUTCMonth() + 1) + '/' + d.getUTCFullYear() +
+          ' ' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes())
+        : i % 4 === 2
+          ? iso.replace('T', ' ').replace('.000Z', '')
+          : iso
+
+  // Ports welded onto the address, and no port columns at all.
+  const src = i % 3 === 0 ? r.src_ip + ':' + r.src_port : r.src_ip
+  const dst = i % 5 === 0 ? r.dst_ip + ':' + r.dst_port : r.dst_ip
+
+  // Three array encodings.
+  const joinAddrs = (a: string[]) =>
+    i % 3 === 0 ? JSON.stringify(a) : i % 3 === 1 ? a.join(';') : a.join('|')
+
+  // Satoshis on some rows, a currency symbol on others.
+  const amounts = (a: number[]) =>
+    i % 3 === 0
+      ? a.map((v) => String(Math.round(v * 1e8))).join('|')
+      : i % 3 === 1
+        ? a.map((v) => '₿' + v.toFixed(8)).join('|')
+        : a.join('|')
+
+  return [
+    when, r.txid, src, dst,
+    q(joinAddrs(r.input_addresses)), q(joinAddrs(r.output_addresses)),
+    q(amounts(r.input_amounts)), q(amounts(r.output_amounts)),
+    r.fee, i % 7 === 0 ? '' : r.script_type,
+    i % 6 === 0 ? '' : r.geo_country, r.asn,
+  ].join(',')
+})
+
+// Defects the cleaner must reject rather than repair.
+messyLines.splice(12, 0, ',9f2c1a55deadbeef,10.0.0.1,10.0.0.2,bc1qaaa,bc1qbbb,0.5,0.5,0.0001,P2WPKH,IN,AS9498')
+messyLines.splice(25, 0, [rows[3].timestamp, 'badip0001', '999.1.1.1', '10.0.0.2', 'bc1qccc', 'bc1qddd', '0.5', '0.5', '0.0001', 'P2WPKH', 'IN', 'AS4837'].join(','))
+messyLines.splice(38, 0, [rows[4].timestamp, 'mismatch01', '10.0.0.3', '10.0.0.4', q('bc1qeee|bc1qfff'), 'bc1qggg', q('0.2|0.3'), q('0.1|0.2|0.3'), '0.0001', 'P2WPKH', 'NL', 'AS4837'].join(','))
+messyLines.splice(51, 0, [rows[5].timestamp, 'negative01', '10.0.0.5', '10.0.0.6', 'bc1qhhh', 'bc1qiii', '-0.4', '0.4', '0.0001', 'P2WPKH', 'DE', 'AS4837'].join(','))
+// A duplicate txid, which should be counted and dropped.
+messyLines.splice(64, 0, messyLines[8])
+
+writeFileSync('public/samples/capture-raw-messy.csv', [messyHeader, ...messyLines].join('\n') + '\n', 'utf8')
+console.log('wrote public/samples/capture-raw-messy.csv —', messyLines.length, 'rows with mixed formats and 5 defects')

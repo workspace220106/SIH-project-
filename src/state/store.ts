@@ -11,6 +11,7 @@ import type {
 } from '@/types'
 import { assemble, neighbourhood, tracePath, type Analysis } from '@/lib/graph'
 import { datasetFromRecords, parseCapture, type ParseResult } from '@/lib/ingest'
+import { cleanCapture, type CleaningResult } from '@/lib/clean'
 import { nexus, type ServiceStatus } from '@/lib/api'
 import { loadGeoDatabase } from '@/lib/geoip'
 import { PATTERN_ORDER } from '@/lib/patterns'
@@ -56,6 +57,13 @@ export interface IngestState {
   stage: number
   filename: string | null
   parse: ParseResult | null
+  error: string | null
+}
+
+export interface PrepareState {
+  busy: boolean
+  filename: string | null
+  result: CleaningResult | null
   error: string | null
 }
 
@@ -141,6 +149,11 @@ export interface NexusState {
   /* motion preference: follows the OS unless overridden */
   motion: MotionPreference
   setMotion: (m: MotionPreference) => void
+
+  /* preparation — cleaning a raw capture into a canonical one */
+  prepare: PrepareState
+  prepareFile: (file: File) => Promise<void>
+  clearPrepare: () => void
 
   /* ingestion */
   ingest: IngestState
@@ -404,6 +417,38 @@ export const useNexus = create<NexusState>((set, get) => ({
   motion: 'full',
   setMotion(m) {
     set({ motion: m })
+  },
+
+  prepare: { busy: false, filename: null, result: null, error: null },
+
+  async prepareFile(file) {
+    set({ prepare: { busy: true, filename: file.name, result: null, error: null } })
+    try {
+      const text = await file.text()
+      // Yielded so the button can show its working state before the parse
+      // takes the main thread on a large file.
+      await pause(120)
+      const result = cleanCapture(text, file.name)
+      if (!result.records.length) {
+        throw new Error(
+          'Nothing survived cleaning. Check that the file has a header row and a txid column.',
+        )
+      }
+      set({ prepare: { busy: false, filename: file.name, result, error: null } })
+    } catch (err) {
+      set({
+        prepare: {
+          busy: false,
+          filename: file.name,
+          result: null,
+          error: err instanceof Error ? err.message : 'Could not read this file.',
+        },
+      })
+    }
+  },
+
+  clearPrepare() {
+    set({ prepare: { busy: false, filename: null, result: null, error: null } })
   },
 
   ingest: { busy: false, stage: 0, filename: null, parse: null, error: null },

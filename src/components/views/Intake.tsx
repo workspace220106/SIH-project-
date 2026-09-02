@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import { useNexus } from '@/state/store'
 import { INGEST_STAGES } from '@/lib/api'
 import { geoDatabaseStatus } from '@/lib/geoip'
+import { PrepareBox } from '@/components/PrepareBox'
 import { useNexus as useStore } from '@/state/store'
 import { Label } from '@/components/ui'
 
@@ -37,15 +38,18 @@ export function Intake() {
 
   return (
     <div className="absolute inset-0 overflow-y-auto bg-void">
-      <div className="mx-auto max-w-[860px] px-6 py-7">
+      <div className="mx-auto max-w-[1040px] px-6 py-7">
         {/* Drop + pipeline */}
         <div>
           <h1 className="display text-[16px] tracking-[0.16em] text-ink">DATA INTAKE</h1>
           <p className="mt-2 max-w-[560px] text-[13px] leading-relaxed text-muted">
-            Files are read in this browser and never transmitted. Detection runs against whatever
-            capture is loaded — drop one in, or keep working with the synthetic capture.
+            Files are read in this browser and never transmitted. Prepare a raw capture on the
+            right to get a canonical file, then drop that on the left to run detection — or drop an
+            already-clean capture straight in.
           </p>
 
+          {/* Two stages: prepare a raw capture, then analyse a clean one. */}
+          <div className="mt-6 grid items-stretch gap-4 md:grid-cols-2">
           <div
             onDragOver={(e) => {
               e.preventDefault()
@@ -58,7 +62,7 @@ export function Intake() {
               take(e.dataTransfer.files)
             }}
             className={clsx(
-              'regmark mt-6 flex flex-col items-center justify-center rounded-2xl border border-dashed px-6 py-12 shadow-sm transition-colors',
+              'regmark flex flex-col items-center justify-center rounded-2xl border border-dashed px-6 py-12 shadow-sm transition-colors',
               dragging ? 'border-accent bg-accent/[0.04]' : 'border-line-strong bg-surface/60',
             )}
           >
@@ -83,12 +87,16 @@ export function Intake() {
             />
           </div>
 
+            <PrepareBox />
+          </div>
+
           <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1">
             <span className="label">Sample captures</span>
             {[
               ['CSV', '/samples/capture-sample.csv'],
               ['JSON', '/samples/capture-sample.json'],
               ['XML', '/samples/capture-sample.xml'],
+              ['RAW / MESSY', '/samples/capture-raw-messy.csv'],
             ].map(([label, href]) => (
               <a
                 key={label}
@@ -100,7 +108,7 @@ export function Intake() {
               </a>
             ))}
             <span className="font-mono text-3xs uppercase tracking-[0.14em] text-ghost">
-              synthetic · safe to import
+              synthetic · the raw one is for the preparation stage
             </span>
           </div>
 

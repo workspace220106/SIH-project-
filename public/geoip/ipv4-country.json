@@ -1,0 +1,1 @@
+{"generated":"","source":"","ranges":[],"note":"Placeholder. Replace by running scripts/build-geoip.ts against a MaxMind GeoLite2 Country CSV export. Until then, countries are read from the capture's own geo_country column."}

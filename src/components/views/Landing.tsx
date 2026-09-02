@@ -14,7 +14,7 @@ import { Eyebrow, Meter } from '@/components/ui'
 /* The ten acts. Numbering is meaningful here: this is a sequence, and the
    analyst is being walked through it in order. */
 const ACTS = [
-  { id: 'FIELD', title: 'A capture, before anything is known', body: 'Seven fields per record — txid, wallet, amount, fee, ip, port, timestamp. On their own they are a list. Nothing in a list looks suspicious.' },
+  { id: 'FIELD', title: 'A capture, before anything is known', body: 'One row per transaction: timestamp, txid, source and destination host, input and output addresses and amounts. On their own they are a list, and nothing in a list looks suspicious.' },
   { id: 'VOLUME', title: 'Volume arrives faster than it can be read', body: 'A single afternoon of traffic. Every transaction is legitimate until something about its shape says otherwise.' },
   { id: 'STRUCTURE', title: 'Correlation turns records into relationships', body: 'IP ↔ TXID ↔ time. The same host reappears across wallets that never transact directly. That is the first thing worth knowing.' },
   { id: 'CLUSTERS', title: 'Structure separates into behaviour', body: 'Six sets emerge from the same capture. Most are ordinary settlement. Two are not shaped like settlement at all.' },

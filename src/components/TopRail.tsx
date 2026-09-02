@@ -13,7 +13,7 @@ export const ALL_MODULES: Array<{ view: View; label: string; key: string }> = [
 
 /** Active modules shown in the navigation bar. The shortcut shown on each tab
  *  is the one the keyboard handler actually listens for. */
-const VISIBLE_MODULES = ALL_MODULES.filter((m) => m.view !== 'command')
+const VISIBLE_MODULES = ALL_MODULES
 
 /** One row: who we are, where we are, and the synthetic status. */
 export function TopRail() {

@@ -24,6 +24,7 @@ import { PATTERN_DEFS, PATTERN_ORDER } from '@/lib/patterns'
 import { IsolationForest } from '@/lib/ml/isolationForest'
 import { explainScore, extractFeatures, FEATURES } from '@/lib/ml/features'
 import { commonInputOwnership, type OwnershipClustering } from '@/lib/entities'
+import { propagateTaint, type TaintResult } from '@/lib/taint'
 
 /* ------------------------------------------------------------------ *
  * Small numeric helpers
@@ -86,6 +87,8 @@ export interface Analysis {
   anomalies: Map<string, AnomalyResult>
   /** Address sets recovered by the common-input-ownership heuristic. */
   ownership: OwnershipClustering
+  /** walletId → how much flagged value reached it, and from where. */
+  taint: Map<string, TaintResult>
   /** The wallet the pipeline surfaces first — the demonstration subject. */
   primarySubject: string
 }
@@ -95,11 +98,12 @@ export interface Analysis {
  * ------------------------------------------------------------------ */
 
 const SIGNAL_WEIGHTS = {
-  transaction: 0.22,
-  graph: 0.2,
-  temporal: 0.14,
-  behaviour: 0.18,
-  anomaly: 0.26,
+  transaction: 0.2,
+  graph: 0.18,
+  temporal: 0.12,
+  behaviour: 0.16,
+  anomaly: 0.22,
+  taint: 0.12,
 } as const
 
 function buildRisk(
@@ -109,6 +113,7 @@ function buildRisk(
     temporal: number
     behaviour: number
     anomaly: number
+    taint: number
   },
   detail: Record<keyof typeof values, string>,
   evidenceCount: number,
@@ -120,6 +125,7 @@ function buildRisk(
       ['temporal', 'Temporal', values.temporal],
       ['behaviour', 'Behaviour', values.behaviour],
       ['anomaly', 'Model anomaly', values.anomaly],
+      ['taint', 'Seed proximity', values.taint],
     ] as const
   ).map(([key, label, value]) => ({
     key,
@@ -243,6 +249,12 @@ export function assemble(dataset: Dataset, seed = 26146): Analysis {
     anomalyValue.set(id, clamp(((raw - scoreFloor) / (scoreCeil - scoreFloor)) * 100))
   })
 
+  // ---- risk propagation -------------------------------------------------
+  // Seeds are the wallets a detector named as an anchor. In deployment they
+  // would come from a watchlist; the mechanism is identical either way.
+  const seedWallets = [...new Set(planted.map((p) => p.anchorWallet))]
+  const taint = propagateTaint(transactions, seedWallets)
+
   // ---- wallet scoring ---------------------------------------------------
   for (const w of wallets) {
     const pats = walletPatterns.get(w.id) ?? []
@@ -281,9 +293,11 @@ export function assemble(dataset: Dataset, seed = 26146): Analysis {
 
     const anomaly = anomalyValue.get(w.id) ?? 0
     const topFeature = anomalies.get(w.id)?.contributions[0]
+    const reached = taint.get(w.id)
+    const taintValue = clamp((reached?.value ?? 0) * 100)
 
     w.risk = buildRisk(
-      { transaction, graph, temporal, behaviour, anomaly },
+      { transaction, graph, temporal, behaviour, anomaly, taint: taintValue },
       {
         transaction:
           volume.toFixed(2) + ' BTC across ' + w.txCount + ' transactions',
@@ -296,6 +310,16 @@ export function assemble(dataset: Dataset, seed = 26146): Analysis {
         anomaly: topFeature
           ? 'isolation forest, driven by ' + topFeature.label.toLowerCase()
           : 'isolation forest, no dominant feature',
+        taint: reached
+          ? reached.hops === 0
+            ? 'seed wallet for propagation'
+            : (reached.value * 100).toFixed(0) +
+              '% of a flagged chain, ' +
+              reached.hops +
+              ' hop' +
+              (reached.hops === 1 ? '' : 's') +
+              ' from a seed'
+          : 'no flagged value reached this wallet',
       },
       pats.length + (bridge > 1 ? 1 : 0),
     )
@@ -617,7 +641,7 @@ export function assemble(dataset: Dataset, seed = 26146): Analysis {
     .slice(0, 6)
 
   const leads: Lead[] = leadWallets.map((w, i) => {
-    const ev = buildEvidence(w, walletPatterns.get(w.id) ?? [], index, anomalies.get(w.id))
+    const ev = buildEvidence(w, walletPatterns.get(w.id) ?? [], index, anomalies.get(w.id), taint.get(w.id))
     const pats = walletPatterns.get(w.id) ?? []
     return {
       id: 'LEAD-' + (47 - i),
@@ -663,6 +687,7 @@ export function assemble(dataset: Dataset, seed = 26146): Analysis {
     },
     anomalies,
     ownership,
+    taint,
     primarySubject,
   }
 }
@@ -684,6 +709,7 @@ export function buildEvidence(
   pats: PlantedPattern[],
   index: GraphIndex,
   anomaly?: AnomalyResult,
+  reached?: TaintResult,
 ): Evidence[] {
   const ranked = [...pats].sort((a, b) => b.strength - a.strength)
   const items: Evidence[] = ranked.map((p, i) => {
@@ -719,6 +745,30 @@ export function buildEvidence(
       relatedEntities: [wallet.id, ...(index.neighbours.get(wallet.id) ?? []).slice(0, 24)],
       relatedEdges: (index.incident.get(wallet.id) ?? []).slice(0, 40),
       strength: Math.min(0.97, 0.45 + anomaly.score * 0.9),
+    })
+  }
+
+  // Value that arrived from a flagged wallet is its own claim, separate from
+  // how this wallet behaves.
+  if (reached && reached.hops > 0 && reached.value > 0.05) {
+    const source = index.walletById.get(reached.seed)
+    items.push({
+      index: items.length + 1,
+      type: 'TAINT',
+      title: 'SEED PROXIMITY',
+      description:
+        'Value traced forward from a wallet a detector already named. Taint is split across a transaction’s outputs in proportion to the value each received and decays per hop, so this is the strongest single chain of custody rather than a count of coincidences.',
+      metric:
+        (reached.value * 100).toFixed(0) +
+        '% of a flagged chain, ' +
+        reached.hops +
+        ' hop' +
+        (reached.hops === 1 ? '' : 's') +
+        ' from ' +
+        (source ? shortAddr(source.address) : reached.seed),
+      relatedEntities: [wallet.id, reached.seed],
+      relatedEdges: (index.incident.get(wallet.id) ?? []).slice(0, 40),
+      strength: Math.min(0.9, 0.35 + reached.value * 0.6),
     })
   }
 

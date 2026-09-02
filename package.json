@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "geoip": "esbuild scripts/build-geoip.ts --bundle --platform=node --format=cjs --alias:@=./src --outfile=.tmp/geoip.cjs --log-level=warning && node .tmp/geoip.cjs",
+    "samples": "esbuild scripts/emit-sample.ts --bundle --platform=node --format=cjs --alias:@=./src --outfile=.tmp/emit.cjs --log-level=warning && node .tmp/emit.cjs",
+    "inspect": "esbuild scripts/inspect-model.ts --bundle --platform=node --format=cjs --alias:@=./src --outfile=.tmp/inspect.cjs --log-level=warning && node .tmp/inspect.cjs",
+    "inspect:clean": "esbuild scripts/inspect-clean.ts --bundle --platform=node --format=cjs --alias:@=./src --outfile=.tmp/clean.cjs --log-level=warning && node .tmp/clean.cjs"
   },
   "dependencies": {
     "@fontsource-variable/public-sans": "^5.3.0",

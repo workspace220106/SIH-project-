@@ -19,7 +19,7 @@ export const ALL_PANEL_TABS: Array<{ id: PanelMode; label: string }> = [
 ]
 
 /** Visible tabs shown in the right panel header. */
-const TABS = ALL_PANEL_TABS.filter((t) => t.id !== 'trace' && t.id !== 'replay')
+const TABS = ALL_PANEL_TABS
 
 /**
  * The workspace is the field. Panels open in response to an action — selecting

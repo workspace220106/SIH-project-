@@ -13,6 +13,9 @@ Everything runs in the browser. There is no outbound network path.
 > All data shipped with this build is **synthetic**. It is generated locally for demonstration
 > and is not a record of observed activity.
 
+**Technical write-up:** approach, model choice and explainability method are in
+[docs/TECHNICAL-WRITEUP.md](docs/TECHNICAL-WRITEUP.md).
+
 **Scope:** this is a hackathon build. Three endpoints, no database, rule-based
 detectors with published thresholds, and a weighted-sum risk score. What the
 backend must do — and what it deliberately does not — is written down in
@@ -20,7 +23,46 @@ backend must do — and what it deliberately does not — is written down in
 
 ---
 
+## Running it on Linux, offline
+
+Verified on Ubuntu 22.04 and Debian 12. The only prerequisite is Node.js 20 or newer.
+
+```bash
+sudo apt install nodejs npm
+```
+
+Install and build once, on a machine with network access:
+
+```bash
+npm ci && npm run build
+```
+
+`dist/` is then a self-contained static bundle — application code, fonts and sample captures.
+Copy it to the air-gapped host and serve it locally:
+
+```bash
+npx --yes serve dist -l 5173
+```
+
+Any static file server works (`python3 -m http.server 5173 --directory dist` needs nothing
+installed at all). Then open `http://localhost:5173`.
+
+**Nothing reaches the network at runtime.** Fonts are bundled rather than fetched from a CDN, the
+detection model is fitted in-process on the loaded capture, the GeoIP lookup reads a local file,
+and dropped captures are read in the browser and never transmitted. You can confirm this on the
+host with the network cable out, or watch it directly:
+
+```bash
+sudo ss -tnp | grep -v 127.0.0.1
+```
+
+To install the optional GeoIP database, extract a MaxMind GeoLite2 Country CSV export and run
+`npm run geoip ./geolite2` before building.
+
+---
+
 ## Running it
+
 
 ```bash
 npm install
@@ -90,11 +132,19 @@ A composite of five independently computed signals:
 
 | Signal | Weight | Derived from |
 | --- | --- | --- |
-| Model anomaly | 0.26 | the Isolation Forest score, stretched against the capture's own spread |
-| Transaction | 0.22 | volume and count against the capture's 94th percentile |
-| Graph | 0.20 | degree, and how many behavioural clusters the wallet bridges |
-| Behaviour | 0.18 | which detectors matched, and whether the wallet is their anchor |
-| Temporal | 0.14 | median inter-transaction gap |
+| Model anomaly | 0.22 | the Isolation Forest score, stretched against the capture's own spread |
+| Transaction | 0.20 | volume and count against the capture's 94th percentile |
+| Graph | 0.18 | degree, and how many behavioural clusters the wallet bridges |
+| Behaviour | 0.16 | which detectors matched, and whether the wallet is their anchor |
+| Seed proximity | 0.12 | taint propagated from wallets a detector already named |
+| Temporal | 0.12 | median inter-transaction gap |
+
+### Risk propagation
+
+Taint starts at 1.0 on each seed, is split across a transaction's outputs **in proportion to the
+value each received**, and decays 0.6 per hop over at most five hops. A wallet's taint is the
+strongest single chain that reached it. Proportional splitting is what stops a small payment into
+a busy wallet from painting everything downstream.
 
 Confidence rises with the number of corroborating detections and with the *agreement* between
 signals — one loud signal is treated as weaker than three that concur.

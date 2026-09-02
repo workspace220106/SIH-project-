@@ -38,7 +38,13 @@ export function WhyPanel() {
   const evidence = useMemo(() => {
     if (!analysis || !wallet) return [] as Evidence[]
     const pats = analysis.dataset.planted.filter((p) => p.walletIds.includes(wallet.id))
-    return buildEvidence(wallet, pats, analysis.index, analysis.anomalies.get(wallet.id))
+    return buildEvidence(
+      wallet,
+      pats,
+      analysis.index,
+      analysis.anomalies.get(wallet.id),
+      analysis.taint.get(wallet.id),
+    )
   }, [analysis, wallet])
 
   useEffect(() => () => window.clearTimeout(timer.current), [])
@@ -82,8 +88,8 @@ export function WhyPanel() {
       {revealed === 0 ? (
         <div className="flex flex-1 flex-col justify-center px-4 py-6">
           <p className="text-[12.5px] leading-relaxed text-muted">
-            Five detectors matched this wallet. They are ranked by how much each one moved the
-            composite score — not by the order they fired.
+            {evidence.length} findings back this wallet. They are ranked by how much each one
+            moved the composite score — not by the order they fired.
           </p>
           <button type="button" className="btn btn-primary mt-5 h-[38px] justify-center" onClick={runReveal}>
             Why suspicious?

@@ -57,7 +57,8 @@ export function PatternLab() {
         <div className="border-b border-line px-4 py-2.5">
           <span className="display text-[12px] tracking-[0.16em] text-ink">PATTERN LAB</span>
           <p className="mt-1 text-[11px] leading-snug text-faint">
-            Five detectors run over every capture. Select one to isolate its matches in the field.
+            {PATTERN_ORDER.length} detectors run over every capture. Select one to isolate its
+            matches in the field.
           </p>
         </div>
         <ul className="flex-1 overflow-y-auto">

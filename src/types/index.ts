@@ -129,7 +129,7 @@ export interface Edge {
 }
 
 export interface RiskSignal {
-  key: 'transaction' | 'graph' | 'temporal' | 'behaviour' | 'anomaly'
+  key: 'transaction' | 'graph' | 'temporal' | 'behaviour' | 'anomaly' | 'taint'
   label: string
   /** Raw signal strength 0–100. */
   value: number

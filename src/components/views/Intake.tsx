@@ -283,7 +283,7 @@ function GeoStatus() {
           className={clsx('h-[6px] w-[6px] rounded-full', geo.loaded ? 'bg-accent' : 'bg-line-strong')}
         />
         <span className="font-mono text-2xs uppercase tracking-[0.14em] text-ink">
-          {geo.loaded ? geo.label : 'Not installed'}
+          {geo.loaded ? geo.label : 'Resolving from capture'}
         </span>
         {geo.loaded && (
           <span className="ml-auto font-mono text-3xs tabular-nums text-muted">
@@ -294,7 +294,7 @@ function GeoStatus() {
       <p className="mt-2 text-[11.5px] leading-relaxed text-faint">
         {geo.loaded
           ? 'Addresses without a country in the capture are resolved locally against this database. No lookup leaves this host.'
-          : 'Countries are read from the capture’s geo_country column. To resolve addresses that lack one, build public/geoip/ipv4-country.json from a MaxMind GeoLite2 export using scripts/build-geoip.ts — the lookup then runs entirely offline.'}
+          : 'Country and ASN are being read from the capture’s own geo_country and asn columns, which the field specification requires it to carry. A local GeoLite2 database is the fallback for captures that omit them: run npm run geoip against an extracted MaxMind export and the lookup runs here, offline, against sorted ranges.'}
       </p>
     </div>
   )

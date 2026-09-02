@@ -15,19 +15,17 @@ export function Boot({ onDone }: { onDone: () => void }) {
       onDone()
       return
     }
-    const step = 165
     const id = window.setInterval(() => {
-      setStage((s) => {
-        if (s >= INGEST_STAGES.length) {
-          window.clearInterval(id)
-          onDone()
-          return s
-        }
-        return s + 1
-      })
-    }, step)
+      setStage((s) => Math.min(s + 1, INGEST_STAGES.length))
+    }, 165)
     return () => window.clearInterval(id)
   }, [onDone, reduced])
+
+  // Completion is reported from its own effect. Calling onDone inside the
+  // updater above ran it during render, which set state on the parent mid-render.
+  useEffect(() => {
+    if (stage >= INGEST_STAGES.length) onDone()
+  }, [stage, onDone])
 
   return (
     <div

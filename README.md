@@ -294,4 +294,7 @@ npx esbuild scripts/inspect-model.ts --bundle --platform=node --format=cjs --ali
 ```
 
 Prints the scoring distribution headlessly — used to check the risk model after changes.
-`scripts/emit-sample.ts` regenerates the sample captures in `public/samples/`.
+`npm run inspect:imported` runs the whole imported chain — clean, parse, assemble — and asserts
+the model refits on it rather than reusing the synthetic fit.
+
+`npm run samples` regenerates the sample captures in `public/samples/`.

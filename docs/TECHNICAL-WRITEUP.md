@@ -177,6 +177,12 @@ in the 3D graph. The analyst checks the system's working rather than accepting i
 - **GeoLite2 is not redistributed with the repo.** Country and ASN are read from the capture, which
   the field specification requires it to carry; the database is the fallback for captures that omit
   them, installed with `npm run geoip`.
+- **Sub-sampling does nothing on small captures.** The forest draws 256 rows per tree, but a
+  capture with fewer wallets than that trains every tree on the whole set, so the only randomness
+  left is in the split points. Sub-sampling is what makes Isolation Forest resistant to swamping
+  and masking, and that protection is absent below ~256 wallets. Scores are still discriminating —
+  64 distinct values across 66 wallets on the imported sample — but trees are more correlated than
+  the published method assumes.
 - **Graph embeddings are not implemented.** Entity clustering uses the co-spend heuristic only.
 
 ---
@@ -188,6 +194,12 @@ npm install
 npm run dev          # workstation at http://localhost:5173
 npm run inspect      # detection engine headlessly, with the model output
 npm run inspect:clean # the preparation stage over the messy sample
+npm run inspect:imported # the whole imported chain: clean → parse → assemble
 ```
+
+`inspect:imported` exists to answer one question directly: does the model refit on an imported
+capture, or is it only ever fitted on the synthetic one? It asserts that the fitted wallet count
+matches the imported dataset and differs from the synthetic fit, and that the anomaly scores vary
+rather than collapsing to a constant.
 
 The generator is seeded, so every figure in this document reproduces exactly.

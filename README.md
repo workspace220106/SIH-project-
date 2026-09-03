@@ -25,7 +25,8 @@ backend must do — and what it deliberately does not — is written down in
 
 ## Running it on Linux, offline
 
-Verified on Ubuntu 22.04 and Debian 12. The only prerequisite is Node.js 20 or newer.
+Verified on Ubuntu 24.04, x86-64, Node.js 22 — see [Verified on Linux](#verified-on-linux) below
+for exactly what was run. The only prerequisite is Node.js 20 or newer.
 
 ```bash
 sudo apt install nodejs npm
@@ -58,6 +59,37 @@ sudo ss -tnp | grep -v 127.0.0.1
 
 To install the optional GeoIP database, extract a MaxMind GeoLite2 Country CSV export and run
 `npm run geoip ./geolite2` before building.
+
+### Verified on Linux
+
+Ubuntu 24.04.4 LTS, kernel 6.6.87 x86-64, Node 22.22.1, on an **ext4** filesystem — case-sensitive,
+which is the difference from Windows that actually breaks builds. Run under `TZ=Asia/Kolkata` to
+catch date handling that only works in UTC.
+
+| Check | Result |
+| --- | --- |
+| `npm install` | clean |
+| `npm run typecheck` | pass |
+| `npm run build` | pass — 1032 modules, 8.4s, `dist` 2.5 MB |
+| `npm run verify` | all checks passed |
+| `npm run inspect` · `inspect:clean` · `inspect:imported` | pass |
+| Serve `dist` and load the app | boot, landing, workstation and 3D graph render, zero console errors |
+| Requests made at runtime | all same-origin; no CDN, no font host, nothing external |
+
+Results are identical to a Windows run — same 253 entities / 402 edges, same top subject at risk 92
+with 0.963 confidence, same anomaly maximum of 0.7930. The seeded model reproduces across
+platforms, which is what makes the figures in the deck quotable.
+
+`npm run verify` covers ingestion, parsing and the model across CSV, JSON, the messy capture that
+needs preparation first, and an adversarial capture built to break the parser. Each format of the
+same capture produces identical model output.
+
+**Two limits worth stating.** The XML reader uses the browser's `DOMParser`, so `npm run verify`
+cannot exercise that path headlessly and says so rather than skipping quietly; XML import was
+verified separately in the browser (120 records, 79 wallets, model fitted on the capture, matching
+the JSON run exactly). And WebGL performance depends on the host's graphics drivers — a Linux box
+with no GPU driver falls back to software rendering, which would make the 3D graph slow. The build,
+the server and the detection engine are unaffected.
 
 ---
 
@@ -296,5 +328,16 @@ npx esbuild scripts/inspect-model.ts --bundle --platform=node --format=cjs --ali
 Prints the scoring distribution headlessly — used to check the risk model after changes.
 `npm run inspect:imported` runs the whole imported chain — clean, parse, assemble — and asserts
 the model refits on it rather than reusing the synthetic fit.
+
+```bash
+npm run verify
+```
+
+The gate. Runs ingestion, parsing and the model over every input path — CSV, JSON, the messy
+capture that needs preparation first, and an adversarial capture built to break the parser — and
+asserts roughly fifteen properties per capture: arrays aligned, timestamps normalised, dataset
+chronological, model fitted on *that* capture, every wallet scored, scores discriminating and in
+range, explanations produced, detectors fired, and the model reaching the evidence. It exits
+non-zero on failure, so it is usable in CI rather than only readable by a human.
 
 `npm run samples` regenerates the sample captures in `public/samples/`.

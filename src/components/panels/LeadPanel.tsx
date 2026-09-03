@@ -189,7 +189,7 @@ function RecentLeads({ current }: { current: Lead }) {
 function downloadReport(lead: Lead) {
   const lines = [
     'TRADELINE — INVESTIGATIVE LEAD #' + String(lead.number).padStart(4, '0'),
-    'NTRO · PS 26146 · SYNTHETIC DATA · OFFLINE ENVIRONMENT',
+    'SYNTHETIC DATA · OFFLINE ENVIRONMENT',
     'GENERATED ' + fmtDateTime(lead.createdAt),
     '',
     'SUBJECT      ' + lead.who,

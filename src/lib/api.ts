@@ -72,7 +72,7 @@ class LocalEngineClient implements NexusClient {
       model: 'READY',
       dataset: 'READY',
       engine: 'nexus-engine/local',
-      buildId: 'PS26146.1.0',
+      buildId: 'TRADELINE.1.0',
       latencyMs: 0,
     }
   }

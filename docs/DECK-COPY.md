@@ -1,6 +1,6 @@
 # Deck replacement copy
 
-Paste-ready text for the SIH idea-submission deck, matched to what the repository actually
+Paste-ready text for the idea-submission deck, matched to what the repository actually
 contains as of the current build. Every claim below is checkable in the code or in the running
 system — which matters, because the demo video shows the same system a judge will be reading these
 slides against.

@@ -18,7 +18,7 @@ Estimated build: **~24 hours**, leaving buffer inside a 30-hour window.
   "model": "READY",
   "dataset": "READY",
   "engine": "tradeline-engine/0.1",
-  "buildId": "PS26146.1.0",
+  "buildId": "TRADELINE.1.0",
   "latencyMs": 0
 }
 ```
@@ -239,7 +239,7 @@ def layout(G: nx.Graph) -> dict:
 def health():
     return {"network": "OFFLINE", "model": "READY",
             "dataset": "READY" if STATE["analysis"] else "EMPTY",
-            "engine": "nexus-engine/0.1", "buildId": "PS26146.1.0", "latencyMs": 0}
+            "engine": "tradeline-engine/0.1", "buildId": "TRADELINE.1.0", "latencyMs": 0}
 
 @app.post("/ingest")
 async def ingest(file: UploadFile):

@@ -1,7 +1,7 @@
 # Technical write-up
 
 **AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic**
-NTRO · Problem Statement 26146 · Team Ben 10 · *Tradeline*
+Team Ben 10 · *Tradeline*
 
 This is the deliverable the problem statement asks for: approach, model choice, and
 explainability method. It is deliberately short. The running system is the argument; this

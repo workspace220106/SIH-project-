@@ -39,7 +39,7 @@ export function Boot({ onDone }: { onDone: () => void }) {
           TRADELINE
         </div>
         <div className="mt-2 font-mono text-3xs uppercase tracking-[0.22em] text-faint">
-          Bitcoin transaction intelligence · PS 26146
+          Bitcoin transaction intelligence
         </div>
 
         <div className="mt-7 space-y-[6px]">

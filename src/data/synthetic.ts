@@ -400,7 +400,7 @@ export function generateDataset(seed = 26146): Dataset {
   const activeIps = ips.filter((i) => i.observationCount > 0)
 
   const stats: DatasetStats = {
-    name: 'NTRO-CAPTURE-26146',
+    name: 'CAPTURE-001',
     source: 'SYNTHETIC',
     format: 'GENERATED',
     records: transactions.length,

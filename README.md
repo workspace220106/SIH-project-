@@ -1,12 +1,12 @@
 # TRADELINE — Bitcoin Transaction Intelligence
 
 An offline analyst workstation for Bitcoin transaction traffic monitoring and analysis.
-Built for NTRO, problem statement **PS 26146**.
 
-TRADELINE takes a capture of seven fields per record — `txid`, `wallet`, `amount`, `fee`, `ip`,
-`port`, `timestamp` — correlates it into a temporal entity graph, runs five behavioural
-detectors over it, scores every wallet, and produces an investigative lead that is anchored to
-the exact nodes and edges that produced it.
+TRADELINE takes a capture of fourteen fields per record — `timestamp`, `txid`, source and
+destination host and port, the input and output address and amount arrays, `fee`, `script_type`,
+`geo_country` and `asn` — correlates it into a temporal entity graph, runs six behavioural
+detectors and an unsupervised model over it, scores every wallet, and produces an investigative
+lead that is anchored to the exact nodes and edges that produced it.
 
 Everything runs in the browser. There is no outbound network path.
 

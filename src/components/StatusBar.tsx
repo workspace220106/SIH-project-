@@ -27,7 +27,7 @@ export function StatusBar() {
       </span>
       <span className="ml-auto flex shrink-0 items-center gap-4">
         <MotionControl />
-        <span className="text-black font-medium">NTRO · PS 26146</span>
+        <span className="text-black font-medium">OFFLINE ENVIRONMENT</span>
       </span>
     </footer>
   )

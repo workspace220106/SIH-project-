@@ -44,7 +44,7 @@ bad()  { printf '   %s✗%s %s\n' "$RED" "$OFF" "$1"; fails=$((fails + 1)); }
 clear
 cat <<'HEAD'
    TRADELINE — Bitcoin Transaction Intelligence
-   NTRO · Problem Statement 26146 · Team Ben 10
+   Team Ben 10
 
    Live demonstration that the system builds and runs on Linux, offline.
 HEAD

@@ -281,7 +281,7 @@ Not in v1, and the interface does not pretend otherwise:
 - **No database.** The analysis lives in process memory. A restart clears it.
 - **No authentication or multi-user state.** One analyst, one workstation.
 - **No GeoIP or ASN enrichment.** A host is an address and a port. That is a
-  separate data source and it is not worth a hackathon hour.
+  separate data source and it is not worth the time.
 - **No trained model.** The detectors are rules with stated thresholds and the
   risk score is a weighted sum. Both are printed in the interface, which is
   more defensible to an investigator than an unexplainable model would be.

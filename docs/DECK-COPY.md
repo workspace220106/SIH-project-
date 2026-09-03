@@ -9,13 +9,11 @@ slides against.
 
 ## Slide 1 — title
 
-Two corrections and two gaps:
+One correction and one gap:
 
 | Field | Change to |
 | --- | --- |
-| Theme | **Cryptocurrency** — the official problem statement says this, not "Blockchain & Cybersecurity" |
-| Organisation | **National Technical Research Organisation** (currently absent) |
-| Team ID | **119257** — currently blank |
+| Theme | **Cryptocurrency** — the official brief says this, not "Blockchain & Cybersecurity" |
 | Video rows | Restore `PPT EXPLANATION:` and `DEMO EXPLANATION & LINK:` with real URLs |
 
 The `PPT EXPLANATION` / `DEMO EXPLANATION` rows were deleted rather than filled. Removing the field

@@ -16,7 +16,7 @@ Everything runs in the browser. There is no outbound network path.
 **Technical write-up:** approach, model choice and explainability method are in
 [docs/TECHNICAL-WRITEUP.md](docs/TECHNICAL-WRITEUP.md).
 
-**Scope:** this is a hackathon build. Three endpoints, no database, rule-based
+**Scope:** this is a deliberately small build. Three endpoints, no database, rule-based
 detectors with published thresholds, and a weighted-sum risk score. What the
 backend must do — and what it deliberately does not — is written down in
 [docs/BACKEND.md](docs/BACKEND.md).

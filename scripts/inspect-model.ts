@@ -74,6 +74,22 @@ const zs = a.entities.map((e) => e.z)
 const range = (v: number[]) => Math.min(...v).toFixed(0) + ' … ' + Math.max(...v).toFixed(0)
 console.log(nl + 'bounds', { x: range(xs), y: range(ys), z: range(zs) })
 
+console.log(nl + 'hosts, country and ASN')
+const resolved = a.dataset.ips.filter((ip) => ip.country !== 'ZZ').length
+console.log('  resolved', resolved, 'of', a.dataset.ips.length, 'hosts')
+for (const ip of [...a.dataset.ips].sort((x, y) => y.observationCount - x.observationCount).slice(0, 8)) {
+  console.log(
+    '  ',
+    ip.address.padEnd(16),
+    ip.country.padEnd(3),
+    ip.asn.padEnd(9),
+    String(ip.observationCount).padStart(3),
+    'obs |',
+    ip.linkedWallets.length,
+    'wallets',
+  )
+}
+
 console.log(nl + 'common-input-ownership')
 console.log('  entities:', a.ownership.groups.size, '| multi-address:', a.ownership.merged.length)
 for (const g of a.ownership.merged.slice(0, 4)) {

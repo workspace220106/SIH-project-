@@ -33,10 +33,7 @@ else
   ranges=0
 fi
 [ "$ranges" -gt 0 ] || echo "not installed, so country and ASN come from the capture (npm run geoip to add it)"
-col=public/samples/capture-sample.csv
-echo -n "countries in the sample capture: "
-awk -F, 'NR==1{for(i=1;i<=NF;i++) if($i=="geo_country") c=i; next} c && $c!="" {print $c}' "$col" | sort -u | tr '\n' ' '
-echo
+echo "resolved hosts are listed under 'detection engine' below"
 
 line "pipeline checks"
 npm run verify

@@ -192,7 +192,7 @@ The entire pipeline has been thoroughly verified on Ubuntu 24.04.4 LTS (kernel 6
 | `npm install` | Clean resolution without security warnings | Pass |
 | `npm run typecheck` | Zero TypeScript compiler diagnostic errors | Pass (`tsc -b` clean) |
 | `npm run build` | 1032 modules bundled cleanly into `dist/` | Pass (~8.4s, 2.5 MB total) |
-| `npm run verify` | 5 capture paths (CSV, JSON, XML, messy, adversarial) | Pass (100% assertions passed) |
+| `npm run verify` | 4 capture paths (CSV, JSON, messy, adversarial) | Pass (100% assertions passed) |
 | `npm run inspect` | Model fitting, risk distribution, lead creation | Pass (Matches seeded invariants) |
 | Network requests at runtime | Zero external HTTP/HTTPS/WebSocket requests | Pass (100% same-origin) |
 

@@ -1,6 +1,6 @@
 /**
  * Runs ingestion, parsing and the model over every input path and asserts the
- * result. Covers CSV, JSON, XML, the messy capture and the adversarial one.
+ * result. Covers CSV, JSON, the messy capture and the adversarial one.
  * Exits non-zero on failure.
  *
  *   npm run verify
@@ -20,7 +20,6 @@ interface Case {
 const CASES: Case[] = [
   { label: 'CSV   capture-sample', file: 'public/samples/capture-sample.csv' },
   { label: 'JSON  capture-sample', file: 'public/samples/capture-sample.json' },
-  { label: 'XML   capture-sample', file: 'public/samples/capture-sample.xml' },
   { label: 'CSV   raw-messy', file: 'public/samples/capture-raw-messy.csv', prepare: true },
   { label: 'CSV   adversarial', file: 'public/samples/adversarial-worst-capture.csv', prepare: true },
 ]
@@ -45,13 +44,6 @@ for (const c of CASES) {
     continue
   }
 
-  // The XML reader uses DOMParser, a browser API, so this headless script
-  // cannot cover that path. Report it rather than skipping silently.
-  if (c.file.endsWith('.xml') && typeof DOMParser === 'undefined') {
-    console.log('   NOTE  XML uses DOMParser (browser API); not testable headlessly.')
-    console.log('         Verify XML import in the running app instead.\n')
-    continue
-  }
 
   // ---- preparation, for captures that arrive dirty -----------------------
   let name = c.file.split('/').pop() as string

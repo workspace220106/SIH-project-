@@ -183,7 +183,7 @@ export const useNexus = create<NexusState>((set, get) => ({
     if (get().analysis) return
     const status = await nexus.status()
     set({ status, loadingStage: 1 })
-    // Absent is normal — captures that carry geo_country resolve without it.
+    // Absent is normal. Captures that carry geo_country resolve without it.
     await loadGeoDatabase()
     const analysis = await nexus.analysis()
     set({

@@ -1,10 +1,7 @@
 /**
- * Developer utility: run the *imported* path end to end and prove the model
- * refits on it.
- *
- * Raw messy file → clean → parse → build dataset → assemble. This is the same
- * chain the Intake screen drives, so if the anomaly detector is not fitting on
- * imported captures it shows up here.
+ * Runs the imported path end to end: raw file, clean, parse, assemble. Same
+ * chain the Intake screen drives, so a model that is not refitting on imported
+ * captures shows up here.
  *
  *   npm run inspect:imported
  */
@@ -16,15 +13,15 @@ import { assemble, analyse, shortAddr } from '@/lib/graph'
 const nl = '\n'
 const raw = readFileSync('public/samples/capture-raw-messy.csv', 'utf8')
 
-// Stage 1 — preparation
+// preparation
 const cleaned = cleanCapture(raw, 'capture-raw-messy.csv')
 console.log('prepare  :', cleaned.report.totalRows, 'rows in →', cleaned.report.accepted, 'clean')
 
-// Stage 2 — ingestion of the cleaned artifact, exactly as the drop zone does
+// ingest the cleaned file, as the drop zone does
 const parsed = parseCapture(cleaned.csv, 'capture-raw-messy.clean.csv')
 console.log('ingest   :', parsed.records.length, 'records parsed,', parsed.rejected.length, 'rejected')
 
-// Stage 3 — the shared engine
+// shared engine
 const dataset = datasetFromRecords(parsed.records, 'capture-raw-messy.clean.csv', 'CSV')
 const imported = assemble(dataset)
 const synthetic = analyse()

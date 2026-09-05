@@ -15,7 +15,7 @@ interface Props {
 
 /**
  * Value in transit. Particles only run on edges that are currently making a
- * claim — a highlighted evidence set, an active trace, or the replay cursor —
+ * claim: a highlighted evidence set, an active trace, or the replay cursor.
  * so movement in the scene always means something.
  */
 export function FlowParticles({ buffers, targets, still }: Props) {
@@ -26,7 +26,7 @@ export function FlowParticles({ buffers, targets, still }: Props) {
 
   const active = useMemo(() => {
     if (!analysis) return [] as number[]
-    // An edge only carries particles when it is actually drawn — during the
+    // An edge only carries particles when it is actually drawn. During the
     // landing reveal and under filters, most of them are not.
     const lit = (i: number) => targets.edges.alpha[i] > 0.4
     if (highlight && highlight.edges.size) {

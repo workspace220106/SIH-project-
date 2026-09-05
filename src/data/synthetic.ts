@@ -12,7 +12,7 @@ import { bech32Tail, between, gauss, hex, intBetween, mulberry32, pick, type Ran
 /**
  * Synthetic dataset generator.
  *
- * Produces a believable — never real — Bitcoin traffic capture with five
+ * Produces a believable but not real Bitcoin traffic capture with five
  * deliberately planted behavioural patterns, so detector output can be
  * checked against ground truth during a demonstration.
  */
@@ -26,7 +26,7 @@ export type PlantedPattern = Detection
 export type { Dataset }
 
 /** Registry-plausible values for the synthetic capture. Real codes, invented
- *  traffic — the dataset is labelled synthetic everywhere it is surfaced. */
+ *  traffic. The dataset is labelled synthetic everywhere it is surfaced. */
 const COUNTRIES = ['IN', 'RU', 'NL', 'US', 'SG', 'DE', 'CN', 'AE', 'UA', 'SE']
 const ASNS = [
   'AS9498', 'AS55836', 'AS4837', 'AS13335', 'AS16509',
@@ -128,7 +128,7 @@ export function generateDataset(seed = 26146): Dataset {
   const transactions: Transaction[] = []
   const planted: Detection[] = []
 
-  // IPs are sticky per wallet — an operator reuses infrastructure, and that
+  // IPs are sticky per wallet. An operator reuses infrastructure, and that
   // co-location across a cluster is itself a correlation signal.
   const walletIp = new Map<string, IPObservation>()
   const ipFor = (w: Wallet): IPObservation => {
@@ -166,7 +166,7 @@ export function generateDataset(seed = 26146): Dataset {
       const alternatives = ips.filter((h) => h.address !== srcHost.address)
       if (alternatives.length) dstHost = pick(r, alternatives)
     }
-    // Several inputs means one signer held every key — the basis of the
+    // Several inputs means one signer held every key, the basis of the
     // common-input-ownership heuristic downstream.
     const inputs: TxParty[] =
       coInputs.length > 0

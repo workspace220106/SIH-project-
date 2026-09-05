@@ -1,6 +1,6 @@
 /**
- * Developer utility: run the preparation stage over the messy sample and print
- * what it repaired and what it refused.
+ * Runs the preparation stage over the messy sample and prints what it repaired
+ * and what it refused.
  *
  *   npx esbuild scripts/inspect-clean.ts --bundle --platform=node --format=cjs \
  *     --alias:@=./src --outfile=.tmp/clean.cjs && node .tmp/clean.cjs

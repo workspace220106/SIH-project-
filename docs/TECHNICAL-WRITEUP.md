@@ -3,74 +3,63 @@
 **AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic**
 *Tradeline*
 
-This is the deliverable the problem statement asks for: approach, model choice, and
-explainability method. It is deliberately short. The running system is the argument; this
-document exists so a reader can check what it claims before trusting it.
+Approach, model choice and explainability method.
 
 ---
 
 ## 1. Approach
 
-The system runs entirely on one machine, offline, in five stages.
+Five stages, run in order:
 
 ```
 PREPARE → INGEST → CORRELATE → DETECT → EXPLAIN
 ```
 
-**Prepare.** Captures arrive dirty. Headers are named by whoever wrote the exporter, dates follow
-whatever convention the local machine used, amounts appear in satoshis or carry a currency mark,
-ports are welded onto addresses, and array columns are encoded three different ways. The
-preparation stage repairs what can be repaired deterministically and rejects what cannot, then
-emits a canonical CSV the analyst can inspect and keep.
+**Prepare.** Captures arrive dirty: header names vary by exporter, dates follow whatever the
+local machine used, amounts come in satoshis or with a currency mark, ports are attached to
+addresses, array columns use three different encodings. This stage repairs what it can repair
+deterministically and rejects the rest, naming the line and the reason.
 
-The rule throughout is that **guessing quietly is worse than failing loudly**. An address array of
-length 2 alongside an amount array of length 3 means value cannot be attributed to an address, so
-the row is dropped and the report names the line and the reason.
+An address array of length 2 with an amount array of length 3 cannot have value attributed to
+an address, so the row is dropped rather than guessed at.
 
 **Ingest.** One row is one transaction. `input_addresses[]` / `output_addresses[]` and their
-amount arrays give both sides directly, so fan-in, fan-out and peeling are read off the record
-rather than inferred from row ordering.
+amount arrays give both sides, so fan-in, fan-out and peeling are read off the record instead of
+being inferred from row order.
 
-**Correlate.** Network-layer observations (`src_ip`, `dst_ip`, ports, timing) are joined to
-blockchain-layer facts (txid, addresses, amounts) into one temporal entity graph with three node
-kinds — wallet, transaction, host — and two edge kinds — value flow and host link. A transaction
-is a node rather than an edge, so a fan-out is visibly a fan and every side carries its own value.
+**Correlate.** Network fields (`src_ip`, `dst_ip`, ports, timing) are joined to blockchain fields
+(txid, addresses, amounts) into one temporal graph with three node types (wallet, transaction,
+host) and two edge types (value flow, host link). A transaction is a node rather than an edge, so
+a fan-out is visibly a fan and each side carries its own value.
 
-**Detect.** Six rule-based detectors and one machine-learning model run over the same graph,
-independently. Agreement between them is what produces confidence; disagreement is visible rather
-than averaged away.
+**Detect.** Six rule detectors and one model run over the same graph, independently. Agreement
+between them drives confidence.
 
-**Explain.** Every score decomposes into ranked evidence, and every piece of evidence is bound to
-the nodes and edges it came from. Selecting a reason isolates that evidence in the graph. Nothing
-in the interface asserts a conclusion the analyst cannot check.
+**Explain.** Every score breaks down into ranked evidence, and each piece of evidence points at
+the nodes and edges it came from. Selecting a reason isolates that evidence in the graph.
 
 ---
 
 ## 2. Model choice
 
-### The model: Isolation Forest
+### Isolation Forest
 
-120 trees over 256-row subsamples, fitted on whatever capture is loaded, over eight per-wallet
-features. Implemented in `src/lib/ml/isolationForest.ts`.
+120 trees over 256-row subsamples, fitted on whatever capture is loaded, across eight per-wallet
+features. `src/lib/ml/isolationForest.ts`.
 
-**Why unsupervised, and why this one.** A capture arrives with no labels. Nobody has marked which
-wallets are illicit, and the problem statement supplies no ground truth — so a classifier has
-nothing to train against. Any supervised approach here would require inventing labels, which would
-mean the model learns the labelling rule rather than the data.
+**Why unsupervised.** A capture has no labels. Nobody has marked which wallets are illicit and
+there is no ground truth supplied, so a classifier has nothing to train against. Inventing labels
+would mean the model learns the labelling rule instead of the data.
 
-Isolation Forest needs no labels. It exploits a structural property of anomalies — that they are
-**few and different** — and therefore isolated by fewer random splits than ordinary points. The
-score is the average path length to isolation, normalised against what an ordinary point would
-need.
+**Why this one.** Isolation Forest needs no labels. Anomalies are few and different, so fewer
+random splits isolate them. The score is average path length to isolation, normalised against
+what an ordinary point needs. It is cheap, deterministic under a seed, and runs in-process in
+well under a second, which is what keeps the system offline with no inference service.
 
-It is also cheap, deterministic under a seed, and small enough to run in-process in well under a
-second, which is what lets the whole system stay offline with no inference service.
-
-**Alternatives considered.** A gradient-boosted classifier (XGBoost and similar) is the obvious
-choice when labels exist; here they do not. Graph neural networks are the strongest published
-results in this space, and are the right direction with a labelled corpus such as Elliptic, but
-they need training data and a training pipeline that a fully offline deployment cannot assume.
-Both are recorded as future work rather than claimed.
+**Alternatives.** Gradient-boosted classifiers are the obvious choice when labels exist; they do
+not here. Graph neural networks are the strongest published results in this area and are the right
+direction given a labelled corpus such as Elliptic, but they need a training pipeline an offline
+deployment cannot assume. Both are future work, not claims.
 
 ### Features
 
@@ -85,13 +74,13 @@ Both are recorded as future work rather than claimed.
 | Burst fan-out | most counterparties inside any 15-minute window |
 | Outputs per transaction | mean output count of the transactions it spends from |
 
-Every feature is derived from the capture alone and is phrasable in plain words, which is what
-makes the explanation meaningful rather than decorative.
+All eight come from the capture alone and are expressible in plain words, which is what makes the
+explanation useful.
 
-### The rest of the detection layer
+### Rule detectors
 
-Rules are kept alongside the model, not replaced by it. They encode domain knowledge the model
-cannot infer from eight features, and they are the reason a score can be justified in a sentence.
+Rules sit alongside the model. They carry domain knowledge eight features cannot, and they are why
+a score can be justified in a sentence.
 
 | Detector | Rule |
 | --- | --- |
@@ -104,28 +93,24 @@ cannot infer from eight features, and they are the reason a score can be justifi
 
 ### Entity resolution
 
-**Common-input-ownership.** Addresses spent together in one transaction must share a private key
-holder, so they are one entity.
+Addresses spent together as inputs need the same private keys, so they are one entity.
 
-CoinJoin-like transactions are **excluded** from the merge. CoinJoin exists specifically to poison
-this heuristic — its inputs come from different parties who deliberately combined a spend — and
-treating them as one owner is exactly the error it is designed to produce. During development the
-heuristic did produce that false entity group before the exclusion was added.
+CoinJoin-like transactions are excluded from the merge. CoinJoin exists to defeat this heuristic —
+its inputs come from different parties who combined a spend deliberately — so merging them gives
+the wrong owner. The heuristic did produce that false group during development, before the
+exclusion was added.
 
 ### Risk propagation
 
-A wallet can be interesting because of what reached it, not only because of how it behaves. Taint
-starts at 1.0 on each seed (a wallet a detector named as an anchor; in deployment, a watchlist
-entry), is split across a transaction's outputs **in proportion to the value each received**, and
+Taint starts at 1.0 on each seed (a wallet a detector named as an anchor; a watchlist entry in
+deployment), splits across a transaction's outputs in proportion to the value each received, and
 decays 0.6 per hop over at most five hops. A wallet's taint is the strongest single chain that
 reached it.
 
-Proportional splitting is what stops a 0.001 BTC payment into a busy wallet from painting
-everything downstream.
+Splitting by value is what stops a 0.001 BTC payment into a busy wallet from tainting everything
+downstream.
 
 ### Composite score
-
-Six signals, weighted:
 
 | Signal | Weight |
 | --- | --- |
@@ -136,70 +121,64 @@ Six signals, weighted:
 | Seed proximity | 0.12 |
 | Temporal | 0.12 |
 
-Confidence rises with the number of corroborating detections **and with agreement between the
-signals** — one loud signal is treated as weaker evidence than three that concur, which is the
-behaviour an investigator expects.
+Confidence rises with the number of corroborating detections and with agreement between signals.
+One loud signal counts for less than three that concur.
 
 ---
 
-## 3. Explainability method
+## 3. Explainability
 
-**Per-instance feature ablation.**
+Per-instance feature ablation.
 
-For a given wallet, each feature is reset to the population median in turn and the wallet is
-re-scored. The drop in anomaly score is that feature's contribution: if making a wallet ordinary
-in one dimension makes it look far less anomalous, that dimension is what the model reacted to.
-Contributions are normalised to shares and reported with the underlying value.
+Each feature is reset to the population median in turn and the wallet re-scored. The drop in score
+is that feature's contribution. Contributions are normalised to shares and reported with the
+underlying value.
 
-This is the same idea as permutation importance, applied to a single prediction rather than to the
-model as a whole. It was chosen over SHAP because it is exact for this model, needs no additional
-dependency, and produces a number an investigator can restate without understanding the algorithm:
+Chosen over SHAP because it is exact for this model, needs no extra dependency, and gives a number
+an investigator can repeat without knowing the algorithm:
 
 > Burst fan-out 25%, Transaction count 23%, Outgoing degree 20% — 17 counterparties inside one
 > 15-minute window.
 
-**Explanation is not confined to the model.** Every contributor to a score produces a ranked
-evidence row — the model, each matched detector, seed proximity, and graph connectivity — and each
-row names the entities and edges it was derived from. Selecting one isolates exactly that evidence
-in the 3D graph. The analyst checks the system's working rather than accepting its conclusion.
+Explanation is not limited to the model. Every contributor to a score produces an evidence row —
+the model, each matched detector, seed proximity, graph connectivity — and each names the entities
+and edges behind it. Selecting one isolates that evidence in the 3D graph.
 
 ---
 
-## 4. Honest limits
+## 4. Limits
 
-- **The synthetic capture carries planted patterns.** Detector output can be checked against known
-  ground truth, which is the point; it also means detection rates measured on it are not
-  generalisation estimates.
-- **No labelled corpus, so no precision or recall figures.** Quoting accuracy without labels would
-  be inventing it.
-- **IP attribution is correlation, not ownership.** A host observation links a broadcast to an
-  address. It does not establish who controlled the wallet, and the interface does not say it does.
-- **GeoLite2 is not redistributed with the repo.** Country and ASN are read from the capture, which
-  the field specification requires it to carry; the database is the fallback for captures that omit
-  them, installed with `npm run geoip`.
-- **Sub-sampling does nothing on small captures.** The forest draws 256 rows per tree, but a
-  capture with fewer wallets than that trains every tree on the whole set, so the only randomness
-  left is in the split points. Sub-sampling is what makes Isolation Forest resistant to swamping
-  and masking, and that protection is absent below ~256 wallets. Scores are still discriminating —
-  64 distinct values across 66 wallets on the imported sample — but trees are more correlated than
-  the published method assumes.
-- **Graph embeddings are not implemented.** Entity clustering uses the co-spend heuristic only.
+- **The synthetic capture has planted patterns.** Detector output can be checked against known
+  ground truth, which is the point, but detection rates measured on it are not generalisation
+  estimates.
+- **No labelled corpus, so no precision or recall.** Any figure would be invented.
+- **IP attribution is correlation.** A host observation links a broadcast to an address. It does
+  not establish who controlled the wallet, and the interface does not claim otherwise.
+- **GeoLite2 is not shipped.** Country and ASN come from the capture, which the field spec requires
+  it to carry. The database is a fallback for captures that omit them, installed with
+  `npm run geoip`.
+- **Sub-sampling does nothing on small captures.** The forest draws 256 rows per tree, so a capture
+  with fewer wallets trains every tree on the whole set and the only randomness left is the split
+  points. That removes the protection against swamping and masking. Scores still discriminate — 64
+  distinct values across 66 wallets on the imported sample — but the trees are more correlated than
+  the method assumes.
+- **No graph embeddings.** Entity clustering uses the co-spend heuristic only.
 
 ---
 
-## 5. Reproducing the results
+## 5. Reproducing
 
 ```bash
 npm install
-npm run dev          # workstation at http://localhost:5173
-npm run inspect      # detection engine headlessly, with the model output
-npm run inspect:clean # the preparation stage over the messy sample
-npm run inspect:imported # the whole imported chain: clean → parse → assemble
+npm run dev              # workstation at http://localhost:5173
+npm run verify           # asserts the pipeline across every input path
+npm run inspect          # detection engine with model output
+npm run inspect:clean    # preparation stage over the messy sample
+npm run inspect:imported # clean → parse → assemble
 ```
 
-`inspect:imported` exists to answer one question directly: does the model refit on an imported
-capture, or is it only ever fitted on the synthetic one? It asserts that the fitted wallet count
-matches the imported dataset and differs from the synthetic fit, and that the anomaly scores vary
-rather than collapsing to a constant.
+`inspect:imported` answers one question: does the model refit on an imported capture, or is it only
+ever fitted on the synthetic one? It asserts the fitted wallet count matches the imported dataset,
+differs from the synthetic fit, and that scores vary rather than collapsing to a constant.
 
-The generator is seeded, so every figure in this document reproduces exactly.
+The generator and the model are seeded, so every figure here reproduces exactly.

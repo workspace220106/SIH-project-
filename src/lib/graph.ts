@@ -140,7 +140,7 @@ function buildRisk(
   )
 
   // Confidence rises with corroborating evidence and with how far the
-  // dominant signal sits above the others — a single loud signal is weaker
+  // dominant signal sits above the others. A single loud signal is weaker
   // than three that agree.
   const vals = signals.map((s) => s.value)
   const mean = vals.reduce((a, b) => a + b, 0) / vals.length

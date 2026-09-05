@@ -1,7 +1,6 @@
 /**
- * Developer utility: run the detection engine headlessly and print what it
- * produced. Used to sanity-check the risk model and the anomaly detector after
- * changes, without going through the browser.
+ * Runs the detection engine headlessly and prints the output. For checking the
+ * risk model and anomaly detector after changes.
  *
  *   npx esbuild scripts/inspect-model.ts --bundle --platform=node \
  *     --format=cjs --alias:@=./src --outfile=.tmp/inspect.cjs && node .tmp/inspect.cjs

@@ -1,13 +1,7 @@
 /**
- * Verification: ingestion, parsing and the model, across every input path.
- *
- * `inspect:imported` proves the chain works for one file. This proves it for
- * all of them — CSV, JSON, XML, the messy capture that needs preparation
- * first, and the adversarial capture built to break the parser.
- *
- * Every check below is an assertion, so this script can fail. It exits
- * non-zero when it does, which is what makes it usable as a gate rather than
- * as something to read and nod at.
+ * Runs ingestion, parsing and the model over every input path and asserts the
+ * result. Covers CSV, JSON, XML, the messy capture and the adversarial one.
+ * Exits non-zero on failure.
  *
  *   npm run verify
  */
@@ -19,7 +13,7 @@ import { assemble } from '@/lib/graph'
 interface Case {
   label: string
   file: string
-  /** Run the preparation stage first, as the Intake screen does for raw files. */
+  /** Run the preparation stage first, as the Intake screen does. */
   prepare?: boolean
 }
 
@@ -51,10 +45,8 @@ for (const c of CASES) {
     continue
   }
 
-  // The XML reader uses DOMParser, which is a browser API. That is legitimate
-  // — the application runs in a browser — but it means this headless script
-  // cannot exercise that path. Say so rather than skipping quietly, so nobody
-  // reads a clean run as covering XML.
+  // The XML reader uses DOMParser, a browser API, so this headless script
+  // cannot cover that path. Report it rather than skipping silently.
   if (c.file.endsWith('.xml') && typeof DOMParser === 'undefined') {
     console.log('   NOTE  XML uses DOMParser (browser API); not testable headlessly.')
     console.log('         Verify XML import in the running app instead.\n')
@@ -111,9 +103,8 @@ for (const c of CASES) {
   const dataset = datasetFromRecords(parsed.records, name, parsed.format)
   const a = assemble(dataset)
 
-  // Source files arrive in whatever order the exporter wrote them. What the
-  // temporal detectors depend on is the dataset being chronological, which is
-  // where the sort actually happens.
+  // Source order is whatever the exporter wrote. The temporal detectors need
+  // the dataset chronological, which is where the sort happens.
   const chrono = dataset.transactions.every(
     (t, i, arr) => i === 0 || arr[i - 1].timestamp <= t.timestamp,
   )
@@ -143,9 +134,8 @@ for (const c of CASES) {
   const explained = [...a.anomalies.values()].filter((x) => x.contributions.length > 0).length
   check('explanations produced', explained > 0, `${explained} wallets have ranked feature contributions`)
 
-  // Leads require risk >= 50 with a matched detector. A small or unremarkable
-  // capture legitimately produces none, so this asserts the model reaches the
-  // evidence whenever there is evidence to reach — not that a lead must exist.
+  // Leads need risk >= 50 plus a matched detector, so a small capture can
+  // legitimately produce none. Only assert when there is a lead.
   if (a.leads.length) {
     const modelInEvidence = a.leads.some((l) => l.evidence.some((e) => e.type === 'ML_ANOMALY'))
     check('model reaches the evidence', modelInEvidence, 'MODEL ANOMALY row present in a lead')
@@ -163,7 +153,7 @@ for (const c of CASES) {
   console.log()
 }
 
-// ---- determinism: the same input must give the same answer ---------------
+// ---- determinism ---------------------------------------------------------
 console.log('=== determinism ===')
 {
   const text = readFileSync('public/samples/capture-sample.csv', 'utf8')

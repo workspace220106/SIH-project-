@@ -70,7 +70,7 @@ function Identity({ entity }: { entity: Entity }) {
 
 /**
  * Risk is shown as its parts before it is shown as a number, and each part is
- * clickable — the point is not the 87, it is what produced the 87.
+ * clickable. The point is not the score, it is what produced it.
  */
 function RiskBreakdown({ wallet }: { wallet: Wallet }) {
   const score = useCountUp(wallet.risk.score, 760)

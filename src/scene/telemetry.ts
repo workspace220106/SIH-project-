@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
 /**
- * Camera readout. Deliberately kept outside React state — the HUD samples it
+ * Camera readout. Kept outside React state so the HUD can sample it
  * a few times a second instead of re-rendering on every frame.
  */
 export const telemetry = {

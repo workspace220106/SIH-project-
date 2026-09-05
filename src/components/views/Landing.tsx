@@ -60,7 +60,7 @@ export function Landing() {
     }
   }, [])
 
-  // The capture precipitates into view on arrival — the first thing the page
+  // The capture precipitates into view on arrival. The first thing the page
   // does is show records becoming a network, before anyone has scrolled.
   useEffect(() => {
     if (reduced) {

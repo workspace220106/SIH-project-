@@ -3,7 +3,7 @@ import { AdditiveBlending, BufferAttribute, BufferGeometry } from 'three'
 import { mulberry32 } from '@/lib/rng'
 
 /**
- * Distant dust. It carries no data — its only job is parallax, so the field
+ * Distant dust. It carries no data. Its only job is parallax, so the field
  * reads as a volume you are inside rather than a flat plot. Seeded, so it is
  * the same on every machine.
  */

@@ -3,20 +3,12 @@ import type { Transaction } from '@/types'
 /**
  * Risk propagation from seed wallets.
  *
- * The problem statement asks for scores that "propagate from seed illicit
- * wallets", which is a different claim from scoring each wallet on its own
- * features: it says a wallet is interesting *because of what reached it*, not
- * only because of how it behaves.
+ * Taint starts at 1.0 on a seed and is split across a transaction's outputs in
+ * proportion to the value each received, with a decay per hop. A wallet's
+ * taint is the strongest single path that reached it.
  *
- * This is value-weighted taint diffusion along the flow graph. A seed starts
- * at 1.0. At each transaction the taint on an input is divided across the
- * outputs in proportion to the value each received, and multiplied by a
- * per-hop decay. A wallet's taint is the largest amount that reached it by any
- * path, which keeps the number interpretable — it is the strongest single
- * chain of custody, not a sum over coincidences.
- *
- * Proportional splitting matters. Without it, a seed sending 0.001 BTC to an
- * exchange with millions of unrelated outputs would paint the whole exchange.
+ * Splitting by value stops a small payment into a busy wallet from tainting
+ * everything downstream.
  */
 
 export interface TaintOptions {

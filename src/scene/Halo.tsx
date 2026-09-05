@@ -35,7 +35,7 @@ function makeHaloTexture(): CanvasTexture {
 }
 
 /**
- * The glow around every node — camera-facing quads, one draw call for the whole field.
+ * The glow around every node. Camera-facing quads, one draw call for the field.
  */
 export function HaloLayer({
   positions,

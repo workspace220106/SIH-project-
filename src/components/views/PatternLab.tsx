@@ -9,7 +9,7 @@ import { Label, Meter } from '@/components/ui'
 
 /**
  * Pattern lab. Selecting a detector isolates its real matches in the live
- * field — the schematic on the left and the graph on the right are the same
+ * field. The schematic on the left and the graph on the right are the same
  * claim drawn two ways.
  */
 export function PatternLab() {

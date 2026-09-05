@@ -17,7 +17,7 @@ import { analyse, type Analysis } from '@/lib/graph'
  * implementation runs the detection engine in-process, which is what an
  * air-gapped workstation does. When the FastAPI ingestion, graph-processing
  * and inference services are available, `HttpClient` below is filled in and
- * selected by `VITE_NEXUS_API` — no component changes.
+ * selected by `VITE_NEXUS_API`. No component changes.
  */
 
 export interface ServiceStatus {

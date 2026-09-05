@@ -4,7 +4,7 @@ import { mulberry32 } from '@/lib/rng'
  * Deterministic 3D force layout.
  *
  * Kept in-repo rather than pulled from a layout library so the solver can be
- * seeded, cluster-aware, and budgeted — the graph must settle before first
+ * seeded, cluster-aware and budgeted. The graph must settle before first
  * paint without blocking long enough to be felt.
  */
 

@@ -19,9 +19,9 @@ const RISK_PRESETS: Array<[string, number]> = [
 ]
 
 /**
- * Three controls, behind a button. Each one maps to a single clause a backend
- * can answer — a risk floor, an entity type, a matched pattern — so nothing
- * here implies query machinery that does not exist.
+ * Three controls, behind a button. Each maps to one clause a backend can
+ * answer: a risk floor, an entity type, a matched pattern. Nothing here
+ * implies query machinery that does not exist.
  */
 export function FilterPanel() {
   const [open, setOpen] = useState(false)

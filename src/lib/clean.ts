@@ -3,16 +3,10 @@ import type { RawRecord } from '@/types'
 /**
  * Capture preparation.
  *
- * Field captures arrive dirty: headers named by whoever wrote the exporter,
- * timestamps in whatever the local machine used, amounts with currency symbols
- * or in satoshis, ports welded onto addresses, array columns encoded three
- * different ways. The detection pipeline needs one canonical shape, and
- * guessing quietly is worse than failing loudly.
- *
- * So this stage does two things and reports both: it repairs what can be
- * repaired deterministically, and it rejects what cannot, with the reason and
- * the line number. Output is a canonical CSV that the ingestion path accepts
- * without any further interpretation.
+ * Repairs what can be repaired deterministically (header names, timestamps,
+ * satoshi amounts, ip:port, three array encodings) and rejects the rest with
+ * a line number and a reason. Output is canonical CSV that the ingest path
+ * takes as is.
  */
 
 export const CANONICAL_COLUMNS = [
@@ -55,7 +49,7 @@ export interface CleaningReport {
 export interface CleaningResult {
   records: RawRecord[]
   report: CleaningReport
-  /** Canonical CSV, ready to be fed straight back in as a clean capture. */
+  /** Canonical CSV. */
   csv: string
 }
 
@@ -85,7 +79,7 @@ const HEADER_ALIASES: Record<Canon, string[]> = {
 /** Word separators carry no meaning in a column name. */
 const compact = (s: string) => s.replace(/_/g, '')
 
-/** Loose match: case, spacing, punctuation and a BOM are all noise. */
+/** Loose match: ignores case, spacing, punctuation and BOM. */
 function resolveHeader(raw: string): Canon | null {
   const h = raw
     .replace(/^﻿/, '')
@@ -133,11 +127,7 @@ function parseList(raw: unknown): { values: string[]; repaired: boolean } {
   return { values: parts, repaired: parts.length > 1 || text !== stripped }
 }
 
-/**
- * Timestamps, in the orders a capture is likely to use. Ambiguous
- * day/month pairs are read as day-first, which is the convention in the
- * jurisdiction this is built for; unambiguous values are unaffected.
- */
+/** Timestamp formats a capture is likely to use. Ambiguous dates are day-first. */
 function parseTimestamp(raw: unknown): { value: number | null; repaired: boolean } {
   if (typeof raw === 'number') {
     return { value: raw > 1e11 ? raw : raw * 1000, repaired: true }
@@ -174,9 +164,8 @@ function parseTimestamp(raw: unknown): { value: number | null; repaired: boolean
 }
 
 /**
- * Amounts. Strips currency marks and thousands separators, and converts
- * integer satoshi values to BTC — a whole number above 100,000 is not a
- * plausible BTC amount in this data, but is a very plausible satoshi one.
+ * Amounts. Strips currency marks and separators. A whole number above 100,000
+ * is treated as satoshis.
  */
 function parseAmount(raw: unknown): { value: number | null; repaired: boolean; sats: boolean } {
   if (typeof raw === 'number') {
@@ -481,7 +470,7 @@ export function cleanCapture(text: string, filename: string): CleaningResult {
   }
 }
 
-/** Canonical CSV: the exact shape the ingestion path expects, no guessing left. */
+/** Canonical CSV output. */
 export function toCanonicalCsv(records: RawRecord[]): string {
   const cell = (v: string | number) => {
     const s = String(v)

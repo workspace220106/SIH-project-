@@ -144,7 +144,7 @@ export function useGraphGeometry() {
       }
     })
 
-    // Flat, entity-order positions — the glow layer draws every node in one pass.
+    // Flat, entity-order positions. The glow layer draws every node in one pass.
     const allPositions = new Float32Array(analysis.entities.length * 3)
     analysis.entities.forEach((e, i) => {
       allPositions[i * 3] = e.x

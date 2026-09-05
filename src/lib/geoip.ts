@@ -1,17 +1,9 @@
 /**
  * Offline IP geolocation.
  *
- * Two sources, in priority order:
- *
- *  1. The capture itself. `geo_country` / `asn` are part of the problem
- *     statement's minimum field set, so a well-formed capture already carries
- *     them and no lookup is needed.
- *  2. A local GeoIP database, when the operator has installed one. Build it
- *     from a MaxMind GeoLite2 Country CSV with `scripts/build-geoip.ts`, which
- *     writes `public/geoip/ipv4-country.json`.
- *
- * Nothing here touches the network at runtime. If neither source resolves an
- * address the result is `ZZ`, and the interface says so rather than guessing.
+ * Prefers geo_country / asn carried by the capture. Falls back to a local
+ * table built by scripts/build-geoip.ts. No network at runtime; an address
+ * that resolves to nothing returns ZZ.
  */
 
 export type GeoSource = 'capture' | 'database' | 'unresolved'
@@ -50,10 +42,7 @@ export function ipToLong(ip: string): number {
   return out
 }
 
-/**
- * Loads the local database if one has been installed. Absence is normal, not
- * an error — captures that carry their own country resolve without it.
- */
+/** Loads the local table if one is installed. Absence is normal. */
 export async function loadGeoDatabase(url = '/geoip/ipv4-country.json'): Promise<boolean> {
   if (loaded) return ranges.length > 0
   loaded = true
@@ -75,7 +64,7 @@ export function geoDatabaseStatus(): { loaded: boolean; entries: number; label: 
   return { loaded: ranges.length > 0, entries: ranges.length, label: databaseLabel }
 }
 
-/** Database lookup only. Use `resolveGeo` unless you specifically want this. */
+/** Table lookup only. Use resolveGeo instead. */
 export function lookupIp(ip: string): GeoResult {
   if (!ranges.length) return UNRESOLVED
   const key = ipToLong(ip)
@@ -93,9 +82,7 @@ export function lookupIp(ip: string): GeoResult {
   return UNRESOLVED
 }
 
-/**
- * Country and ASN for an address, preferring what the capture already states.
- */
+/** Country and ASN, preferring what the capture states. */
 export function resolveGeo(ip: string, fromCapture?: { country?: string; asn?: string }): GeoResult {
   const country = fromCapture?.country?.trim().toUpperCase()
   const asn = fromCapture?.asn?.trim().toUpperCase()
@@ -109,5 +96,5 @@ export function resolveGeo(ip: string, fromCapture?: { country?: string; asn?: s
   return asn ? { country: 'ZZ', asn, source: 'capture' } : UNRESOLVED
 }
 
-/** For display: 'ZZ' is not a country, so say what it actually means. */
+/** Display label. ZZ is not a country. */
 export const countryLabel = (code: string) => (code === 'ZZ' || !code ? 'UNRESOLVED' : code)

@@ -3,7 +3,7 @@
  * compact range table the app loads at `public/geoip/ipv4-country.json`.
  *
  * GeoLite2 is free but requires a MaxMind account to download. Nothing is
- * fetched here — point this at a directory you have already extracted.
+ * fetched here. Point this at a directory you have already extracted.
  *
  *   1. Download "GeoLite2 Country: CSV Format" and, optionally, "GeoLite2 ASN:
  *      CSV Format" from https://www.maxmind.com/en/accounts/current/geoip/downloads
@@ -11,7 +11,7 @@
  *   3. npx esbuild scripts/build-geoip.ts --bundle --platform=node --format=cjs \
  *        --alias:@=./src --outfile=.tmp/geoip.cjs && node .tmp/geoip.cjs ./geolite2
  *
- * The app works without this file — captures that carry `geo_country` resolve
+ * The app works without this file. Captures that carry `geo_country` resolve
  * from the record itself.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'

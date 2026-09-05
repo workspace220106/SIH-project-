@@ -1,18 +1,12 @@
 import { mulberry32, type Rand } from '@/lib/rng'
 
 /**
- * Isolation Forest — Liu, Ting & Zhou (2008).
+ * Isolation Forest (Liu, Ting & Zhou, 2008).
  *
- * An unsupervised anomaly detector, chosen because this problem has no labels:
- * a capture arrives with no ground truth about which wallets are illicit, so a
- * classifier has nothing to train against. Isolation Forest needs none. It
- * exploits the fact that anomalies are *few and different*, and therefore get
- * separated from the rest of the data by fewer random splits than normal
- * points do. The score is the average number of splits needed to isolate a
- * point, normalised against what you would expect by chance.
- *
- * It trains in-process on whatever capture is loaded, in well under a second
- * for the sizes this workstation handles, and never touches the network.
+ * Unsupervised, because a capture has no labels for a classifier to train on.
+ * Anomalies are few and different, so random splits isolate them in fewer
+ * steps than normal points. The score is average path length to isolation,
+ * normalised by sample size.
  */
 
 interface ExternalNode {
@@ -31,21 +25,17 @@ interface InternalNode {
 type TreeNode = ExternalNode | InternalNode
 
 export interface IsolationForestOptions {
-  /** Number of isolation trees. More trees, less variance in the score. */
+  /** Number of trees. More trees, less variance. */
   trees?: number
-  /** Rows drawn per tree. The paper's default of 256 is deliberate: a small
-   *  sample makes anomalies easier to isolate, not harder. */
+  /** Rows drawn per tree. 256 is the paper's default. */
   sampleSize?: number
   seed?: number
 }
 
-/** Euler–Mascheroni constant, for the harmonic-number approximation. */
+/** Euler-Mascheroni constant, for the harmonic approximation. */
 const EULER = 0.5772156649015329
 
-/**
- * Average path length of an unsuccessful search in a binary search tree —
- * the normalising term that makes scores comparable across sample sizes.
- */
+/** Average path length of an unsuccessful BST search. Normalises the score. */
 function averagePathLength(n: number): number {
   if (n <= 1) return 0
   if (n === 2) return 1
@@ -120,7 +110,7 @@ export class IsolationForest {
     this.seed = options.seed ?? 26146
   }
 
-  /** Deterministic: the same capture always produces the same model. */
+  /** Fixed seed, so the same capture gives the same model. */
   fit(data: number[][]): this {
     if (!data.length) return this
     const rand = mulberry32(this.seed)
@@ -144,10 +134,7 @@ export class IsolationForest {
     return this
   }
 
-  /**
-   * Anomaly score in [0, 1]. Above 0.5 means the point was isolated faster
-   * than a typical point — the further above, the more anomalous.
-   */
+  /** Score in [0,1]. Above 0.5 means isolated faster than typical. */
   score(x: number[]): number {
     if (!this.trees.length || this.normaliser === 0) return 0
     let total = 0

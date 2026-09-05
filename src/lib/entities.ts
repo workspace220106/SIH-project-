@@ -3,31 +3,21 @@ import type { Transaction, Wallet } from '@/types'
 /**
  * Common-input-ownership clustering.
  *
- * The oldest and most reliable heuristic in Bitcoin analysis: to spend from
- * several addresses in one transaction you must hold the private key for all
- * of them, so addresses appearing together as *inputs* are almost certainly
- * controlled by one entity.
- *
- * The word "inputs" is doing the work. Unioning inputs with outputs as well
- * would just trace who-paid-whom and collapse the whole capture into a single
- * component — a different and far weaker claim, since paying someone is no
- * evidence of controlling their wallet.
+ * Addresses spent together as inputs need the same private keys, so they are
+ * one owner. Inputs only: unioning outputs as well would just trace payments
+ * and collapse most of the capture into one component.
  */
 
 export interface EntityGroup {
   id: string
   walletIds: string[]
-  /** Transactions whose input set produced the merge, as the supporting evidence. */
+  /** Transactions whose inputs caused the merge. */
   evidenceTxIds: string[]
 }
 
 /**
- * Does this transaction look like a CoinJoin?
- *
- * It matters here because CoinJoin is the standard counter to the co-spend
- * heuristic: its inputs come from *different* parties who have deliberately
- * combined a spend. Treating those inputs as one owner is exactly the wrong
- * conclusion, so these transactions are excluded from the merge.
+ * CoinJoin inputs come from different parties, so co-spend clustering gives
+ * the wrong owner. These transactions are excluded from the merge.
  */
 export function looksLikeCoinJoin(tx: Transaction): boolean {
   if (tx.inputs.length < 3 || tx.outputs.length < 3) return false
@@ -42,7 +32,7 @@ export interface OwnershipClustering {
   /** walletId → entity id */
   entityOf: Map<string, string>
   groups: Map<string, EntityGroup>
-  /** Groups holding more than one address — the ones that say something. */
+  /** Groups holding more than one address. */
   merged: EntityGroup[]
   /** Transactions skipped because they looked like a CoinJoin. */
   excludedTxIds: string[]
@@ -98,7 +88,7 @@ export function commonInputOwnership(
   const entityOf = new Map<string, string>()
   const groups = new Map<string, EntityGroup>()
   let index = 0
-  // Largest first, so entity numbering is stable and meaningful.
+  // Largest first, so ids stay stable.
   for (const [, walletIds] of [...byRoot.entries()].sort((a, b) => b[1].length - a[1].length)) {
     const id = 'E' + (index++).toString().padStart(3, '0')
     const evidenceTxIds = [...new Set(walletIds.flatMap((w) => evidence.get(w) ?? []))]

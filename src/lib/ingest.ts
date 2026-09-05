@@ -138,7 +138,7 @@ function toRecord(raw: Record<string, RawCell>): { record?: RawRecord; reason?: 
     return { reason: 'output_amounts contains a non-numeric or negative value' }
   }
   // A length mismatch means value cannot be attributed to an address, which
-  // is worse than a missing column — reject rather than guess.
+  // is worse than a missing column, so reject rather than guess.
   if (inputAmounts.length && inputAmounts.length !== inputAddresses.length) {
     return {
       reason:

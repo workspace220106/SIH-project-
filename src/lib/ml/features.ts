@@ -2,12 +2,8 @@ import type { Transaction, Wallet } from '@/types'
 import type { IsolationForest } from '@/lib/ml/isolationForest'
 
 /**
- * The feature vector the anomaly detector sees, and the method used to explain
- * an individual score.
- *
- * Every feature is derived from the capture alone — no external data, no
- * labels — and each one is something an investigator can read in plain words,
- * which is what makes the explanation meaningful rather than decorative.
+ * Feature vector for the anomaly detector, plus per-instance explanation.
+ * Every feature comes from the capture alone and reads in plain words.
  */
 
 export interface FeatureSpec {
@@ -68,7 +64,7 @@ const WINDOW = 900_000
 export interface FeatureMatrix {
   walletIds: string[]
   rows: number[][]
-  /** Column medians, used as the neutral value when ablating a feature. */
+  /** Column medians. Neutral value when ablating. */
   medians: number[]
 }
 
@@ -106,8 +102,7 @@ export function extractFeatures(wallets: Wallet[], transactions: Transaction[]):
     const gapSeconds = gaps.length ? median(gaps) / 1000 : 3600
     const velocity = 8 - Math.log(Math.max(1, gapSeconds))
 
-    // Coefficient of variation over the amounts this wallet sends. Automated
-    // dispersion produces near-identical amounts; human spending does not.
+    // Coefficient of variation of amounts sent. Automated dispersion is uniform.
     const sentAmounts = out.flatMap((t) =>
       t.outputs.filter((s) => s.wallet !== w.id).map((s) => s.amount),
     )
@@ -159,21 +154,15 @@ export function extractFeatures(wallets: Wallet[], transactions: Transaction[]):
 export interface FeatureContribution {
   key: string
   label: string
-  /** Share of the anomaly score this feature is responsible for, 0–1. */
+  /** Share of the score this feature accounts for, 0-1. */
   share: number
   value: number
   reads: string
 }
 
 /**
- * Why did this row score the way it did?
- *
- * One feature at a time, the value is replaced with the population median and
- * the row is re-scored. The drop in score is that feature's contribution: if
- * making a wallet ordinary in one dimension makes it look far less anomalous,
- * that dimension is what the model was reacting to. This is a per-instance
- * ablation — the same idea as permutation importance, applied to a single
- * prediction rather than to the model as a whole.
+ * Per-instance ablation. Replace one feature with the population median,
+ * re-score, and take the drop as that feature's contribution.
  */
 export function explainScore(
   forest: IsolationForest,

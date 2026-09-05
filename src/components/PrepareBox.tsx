@@ -8,8 +8,8 @@ import { Label } from '@/components/ui'
  *
  * Kept separate from the detection drop zone on purpose. Cleaning is a step an
  * investigator should be able to inspect and sign off before anything is
- * analysed — what was repaired, what was thrown away and why — and the output
- * is a file they hold, not a hidden intermediate.
+ * analysed: what was repaired, what was dropped and why. The output is a file
+ * they hold, not a hidden intermediate.
  */
 export function PrepareBox() {
   const prepare = useNexus((s) => s.prepare)

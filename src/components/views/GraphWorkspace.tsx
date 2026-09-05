@@ -22,8 +22,8 @@ export const ALL_PANEL_TABS: Array<{ id: PanelMode; label: string }> = [
 const TABS = ALL_PANEL_TABS
 
 /**
- * The workspace is the field. Panels open in response to an action — selecting
- * a node, asking a question — and stay closed the rest of the time, so the
+ * The workspace is the field. Panels open in response to an action, such as
+ * selecting a node or asking a question, and stay closed otherwise, so the
  * default state of the screen is the graph and nothing else.
  */
 export function GraphWorkspace() {
@@ -190,8 +190,8 @@ function HopControl() {
 }
 
 /**
- * A locating exercise rather than a game. No score and no reward animation —
- * the payoff is the detection, which is the same payoff the real work has.
+ * A locating exercise rather than a game. No score and no reward animation.
+ * The payoff is the detection, same as the real work.
  */
 function ProbeControl() {
   const probe = useNexus((s) => s.probe)

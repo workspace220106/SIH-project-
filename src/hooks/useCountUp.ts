@@ -3,7 +3,7 @@ import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 
 /**
  * Counts a numeric readout toward its new value. Risk scores change because
- * evidence changed, so the transition is the point — it should be visible but
+ * evidence changed, so the transition is the point. It should be visible but
  * never slow enough to make the analyst wait.
  */
 export function useCountUp(value: number, durationMs = 720, decimals = 0): string {

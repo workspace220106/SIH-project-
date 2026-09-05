@@ -301,7 +301,7 @@ tradeline-btc-intelligence/
 │   ├── inspect-clean.ts            # Headless data-cleaner diagnostic
 │   ├── inspect-imported.ts         # Ingestion-to-model refit assertion
 │   ├── inspect-model.ts            # Headless scoring & telemetry viewer
-│   ├── linux-demo.sh               # Automated terminal presentation script
+│   ├── linux.sh                    # Build and checks for an offline machine
 │   ├── test-worst-data.ts          # Adversarial parser fuzz testing
 │   └── verify-pipeline.ts          # CI regression gate (asserts all 5 formats)
 ├── src/                            # Application source code
